@@ -4,7 +4,7 @@ import { flushPromises } from '@vue/test-utils'
 
 import { emptyData, exportJson } from '@/data/repository'
 import { shortWeekday } from '@/lib/labels'
-import { findDialog, mountComponent, setupStore } from '@/test-utils'
+import { mountComponent, setupStore } from '@/test-utils'
 import SetupView from '@/views/SetupView.vue'
 
 async function setup() {
@@ -16,9 +16,11 @@ describe('SetupView', () => {
   it('adds a person', async () => {
     const { app, user } = await setup()
     await user.click(screen.getByRole('button', { name: 'Add person' }))
-    const dialog = await screen.findByRole('dialog')
+    const dialog = await screen.findByRole('dialog', { name: 'Add person' })
     await user.click(within(dialog).getByRole('button', { name: 'Save' }))
     expect(await within(dialog).findByText('Enter a name')).toBeInTheDocument()
+    const kind = within(within(dialog).getByRole('group', { name: 'Adult or child' }))
+    expect(kind.getByRole('button', { name: 'Child' })).toBePressed()
 
     await user.type(within(dialog).getByRole('textbox', { name: 'Name' }), 'Shoshi')
     await user.click(within(dialog).getByRole('button', { name: 'Save' }))
@@ -33,9 +35,10 @@ describe('SetupView', () => {
     app.regenerate()
     expect(app.data.plan.cells.some((c) => c.slotId === 'lunch')).toBe(true)
 
-    await user.click(screen.getByText('Our lunch'))
-    await user.click(await screen.findByRole('button', { name: 'Remove' }))
-    const confirm = await findDialog('Remove Our lunch?')
+    await user.click(screen.getByRole('listitem', { name: 'Our lunch' }))
+    const editor = await screen.findByRole('dialog', { name: 'Edit meal of the day' })
+    await user.click(within(editor).getByRole('button', { name: 'Remove' }))
+    const confirm = await screen.findByRole('dialog', { name: 'Remove Our lunch?' })
     await user.click(within(confirm).getByRole('button', { name: 'Remove' }))
 
     const h = app.household
@@ -57,7 +60,11 @@ describe('SetupView', () => {
 
   it('sets cook-fresh days', async () => {
     const { app, user } = await setup()
-    await user.click(screen.getByText(shortWeekday(0)))
+    const days = within(screen.getByRole('group', { name: 'Days you can cook fresh' }))
+    const sunday = days.getByRole('button', { name: shortWeekday(0) })
+    expect(sunday).not.toBePressed()
+    await user.click(sunday)
+    expect(sunday).toBePressed()
     expect(app.household.rules?.freshDays).toEqual([0, 2])
   })
 
@@ -86,7 +93,8 @@ describe('SetupView', () => {
     const backup = exportJson(emptyData(new Date(2026, 9, 11)))
     await user.upload(fileInput, new File([backup], 'backup.json', { type: 'application/json' }))
     await flushPromises()
-    await user.click(await screen.findByRole('button', { name: 'Restore' }))
+    const confirm = await screen.findByRole('dialog', { name: 'Restore this backup?' })
+    await user.click(within(confirm).getByRole('button', { name: 'Restore' }))
     expect(app.household.meals).toHaveLength(0)
   })
 
@@ -95,7 +103,8 @@ describe('SetupView', () => {
     app.replaceAll(emptyData(new Date(2026, 9, 18)))
     await flushPromises()
     await user.click(screen.getByRole('button', { name: 'Load starter template' }))
-    await user.click(await screen.findByRole('button', { name: 'Replace everything' }))
+    const confirm = await screen.findByRole('dialog', { name: 'Load the starter template?' })
+    await user.click(within(confirm).getByRole('button', { name: 'Replace everything' }))
     expect(app.household.meals.length).toBeGreaterThan(0)
     expect(app.data.rotationStart).toBe('2026-10-18')
   })

@@ -1,18 +1,27 @@
 <script setup lang="ts">
 // The master list: every meal she has entered, grouped by slot, with add / edit.
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 
 import type { Meal } from '@/core'
+import ChoiceChips, { type Choice } from '@/components/ChoiceChips.vue'
 import MealEditor from '@/components/meals/MealEditor.vue'
 import MealRow from '@/components/meals/MealRow.vue'
 import { filterMeals, groupBySlot, newMeal, type MealFilter } from '@/lib/meals'
 import { useAppStore } from '@/stores/app'
 
 const app = useAppStore()
+// Each meal group (card) is named by its title, at `${groupId}-<index>`.
+const groupId = useId()
 
 const query = ref('')
 /** Chip value: `slot:<id>`, `rescue`, `fun`, or undefined for all meals. */
 const chip = ref<string | undefined>()
+
+const filterChoices = computed<Choice<string>[]>(() => [
+  ...app.household.slots.map((s) => ({ value: `slot:${s.id}`, title: s.name })),
+  { value: 'rescue', title: 'Rescue', icon: 'mdi-lifebuoy' },
+  { value: 'fun', title: 'Fun', icon: 'mdi-party-popper' },
+])
 
 const filter = computed<MealFilter>(() => {
   const c = chip.value
@@ -92,19 +101,15 @@ function remove(id: string) {
       data-test="search"
     />
 
-    <v-chip-group v-model="chip" column selected-class="text-primary" class="mb-2">
-      <v-chip
-        v-for="s in app.household.slots"
-        :key="s.id"
-        :value="`slot:${s.id}`"
-        filter
-        variant="outlined"
-      >
-        {{ s.name }}
-      </v-chip>
-      <v-chip value="rescue" prepend-icon="mdi-lifebuoy" filter variant="outlined">Rescue</v-chip>
-      <v-chip value="fun" prepend-icon="mdi-party-popper" filter variant="outlined">Fun</v-chip>
-    </v-chip-group>
+    <ChoiceChips
+      v-model="chip"
+      :items="filterChoices"
+      label="Filter meals"
+      variant="outlined"
+      column
+      selected-class="text-primary"
+      class="mb-2"
+    />
 
     <v-empty-state
       v-if="app.household.meals.length === 0"
@@ -116,9 +121,15 @@ function remove(id: string) {
       No meals match.
     </div>
 
-    <v-card v-for="g in groups" :key="g.key" class="mb-3" data-test="group">
+    <v-card
+      v-for="(g, gi) in groups"
+      :key="g.key"
+      role="group"
+      :aria-labelledby="`${groupId}-${gi}`"
+      class="mb-3"
+    >
       <v-card-title class="d-flex align-center">
-        {{ g.title }}
+        <span :id="`${groupId}-${gi}`">{{ g.title }}</span>
         <v-spacer />
         <span class="text-body-2 text-medium-emphasis">{{ g.meals.length }}</span>
       </v-card-title>

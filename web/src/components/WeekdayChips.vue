@@ -1,29 +1,40 @@
 <script setup lang="ts">
 // Tap-to-toggle weekday chips (0 = Sunday) instead of a dropdown: fewer taps on a phone.
+import { computed, useId } from 'vue'
+
+import ChoiceChips from '@/components/ChoiceChips.vue'
 import { shortWeekday } from '@/lib/labels'
 import { ALL_WEEKDAYS } from '@/lib/household'
 
 const model = defineModel<number[]>({ required: true })
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
-    label?: string
+    /** Shown above the chips and names them for screen readers. */
+    label: string
     hint?: string
     /** Weekdays offered. */
     days?: readonly number[]
   }>(),
-  { label: undefined, hint: undefined, days: () => ALL_WEEKDAYS },
+  { hint: undefined, days: () => ALL_WEEKDAYS },
 )
+
+const labelId = useId()
+const items = computed(() => props.days.map((d) => ({ value: d, title: shortWeekday(d) })))
 </script>
 
 <template>
   <div class="mb-2">
-    <div v-if="label" class="text-subtitle-1">{{ label }}</div>
-    <v-chip-group v-model="model" multiple column selected-class="text-primary">
-      <v-chip v-for="d in days" :key="d" :value="d" filter variant="outlined" size="large">
-        {{ shortWeekday(d) }}
-      </v-chip>
-    </v-chip-group>
+    <div :id="labelId" class="text-subtitle-1">{{ label }}</div>
+    <ChoiceChips
+      v-model="model"
+      :items="items"
+      :labelledby="labelId"
+      size="large"
+      variant="outlined"
+      column
+      selected-class="text-primary"
+    />
     <div v-if="hint" class="text-caption text-medium-emphasis">{{ hint }}</div>
   </div>
 </template>

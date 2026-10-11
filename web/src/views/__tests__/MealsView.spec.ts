@@ -9,13 +9,11 @@ async function setup() {
   return { ...store, ...(await mountComponent(MealsView, store)) }
 }
 
-/** The meal groups (one card per slot). They have no accessible name, so they carry data-test. */
-const groups = () => [...document.querySelectorAll<HTMLElement>('[data-test=group]')]
-
 describe('MealsView', () => {
   it('groups meals by slot and narrows them by search and filter', async () => {
     const { app, user } = await setup()
-    expect(groups()[0]).toHaveTextContent(app.household.slots[0]!.name)
+    const firstSlot = app.household.slots[0]!.name
+    expect(screen.getByRole('group', { name: firstSlot })).toBeInTheDocument()
 
     const search = screen.getByRole('textbox', { name: 'Search meals' })
     await user.type(search, 'hot dog')
@@ -24,9 +22,13 @@ describe('MealsView', () => {
     expect(screen.queryByText('Chicken soup')).not.toBeInTheDocument()
 
     await user.clear(search)
-    // The filter chips have no labelled group to search within; they come before the meal rows.
-    await user.click(screen.getAllByText('Fun')[0]!)
-    for (const g of groups()) expect(within(g).getAllByText('Fun').length).toBeGreaterThan(0)
+    const filters = within(screen.getByRole('group', { name: 'Filter meals' }))
+    await user.click(filters.getByRole('button', { name: 'Fun' }))
+    expect(filters.getByRole('button', { name: 'Fun' })).toBePressed()
+    expect(screen.queryByRole('group', { name: firstSlot })).not.toBeInTheDocument()
+    const rows = within(screen.getByRole('group', { name: 'Fun meals' })).getAllByRole('listitem')
+    expect(rows.length).toBeGreaterThan(0)
+    for (const row of rows) expect(row).toHaveTextContent('Fun')
   })
 
   it('adds a meal, insisting on a name and a slot', async () => {
@@ -34,15 +36,16 @@ describe('MealsView', () => {
     const before = app.household.meals.length
 
     await user.click(screen.getByRole('button', { name: 'Add meal' }))
-    const editor = await screen.findByRole('dialog')
+    const editor = await screen.findByRole('dialog', { name: 'New meal' })
     await user.click(within(editor).getByRole('button', { name: 'Save' }))
     expect(app.household.meals).toHaveLength(before)
     expect(await within(editor).findByText('Give the meal a name')).toBeInTheDocument()
     expect(within(editor).getByText('Pick at least one meal slot')).toBeInTheDocument()
 
     await user.type(within(editor).getByRole('textbox', { name: 'Meal name' }), '  Mujadara ')
-    // The first "Main meal" chip is "Meal slots it can fill"; the second is leftovers.
-    await user.click(within(editor).getAllByText('Main meal')[0]!)
+    const slots = within(within(editor).getByRole('group', { name: 'Meal slots it can fill' }))
+    await user.click(slots.getByRole('button', { name: 'Main meal' }))
+    expect(slots.getByRole('button', { name: 'Main meal' })).toBePressed()
     await user.click(within(editor).getByRole('button', { name: 'Save' }))
 
     const added = app.household.meals.find((m) => m.name === 'Mujadara')
@@ -56,9 +59,12 @@ describe('MealsView', () => {
     const meal = app.household.meals.find((m) => m.name === 'Hot dogs')!
     app.setCell(0, 'main', meal.id)
 
-    await user.click(screen.getAllByText('Hot dogs')[0]!)
-    await user.click(await screen.findByRole('button', { name: 'Delete meal' }))
-    await user.click(await screen.findByRole('button', { name: 'Delete' }))
+    // A meal that fits several slots has a row in each group; any of them opens it.
+    await user.click(screen.getAllByRole('listitem', { name: 'Hot dogs' })[0]!)
+    const editor = await screen.findByRole('dialog', { name: 'Edit meal' })
+    await user.click(within(editor).getByRole('button', { name: 'Delete meal' }))
+    const confirm = await screen.findByRole('dialog', { name: 'Delete Hot dogs?' })
+    await user.click(within(confirm).getByRole('button', { name: 'Delete' }))
 
     expect(app.meal(meal.id)).toBeUndefined()
     expect(app.data.plan.cells.some((c) => c.mealId === meal.id)).toBe(false)

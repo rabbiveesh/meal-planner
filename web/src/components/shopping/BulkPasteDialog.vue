@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 
 import { parseStapleList } from '@/lib/shopping'
 import { useShoppingStore } from '@/stores/shopping'
@@ -10,6 +10,7 @@ const emit = defineEmits<{ imported: [result: { added: number; skipped: number }
 
 const shopping = useShoppingStore()
 const text = ref('')
+const titleId = useId()
 
 watch(open, (isOpen) => {
   if (isOpen) text.value = ''
@@ -25,8 +26,11 @@ function add() {
 </script>
 
 <template>
-  <v-dialog v-model="open" max-width="600" scrollable>
-    <v-card title="Paste a list">
+  <v-dialog v-model="open" :aria-labelledby="titleId" max-width="600" scrollable>
+    <v-card>
+      <template #title>
+        <span :id="titleId">Paste a list</span>
+      </template>
       <v-card-text>
         <p class="mb-3">
           One item per line. A line ending with <strong>:</strong> starts a category, e.g.

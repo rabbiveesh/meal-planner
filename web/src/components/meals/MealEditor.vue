@@ -1,8 +1,9 @@
 <script setup lang="ts">
 // Full-screen add/edit form for one meal. Works on a copy; nothing changes until Save.
-import { computed, ref, toRaw, useTemplateRef, watch } from 'vue'
+import { computed, ref, toRaw, useId, useTemplateRef, watch } from 'vue'
 
 import type { Meal } from '@/core'
+import ChoiceChips from '@/components/ChoiceChips.vue'
 import ConfirmButton from '@/components/ConfirmButton.vue'
 import WeekdayChips from '@/components/WeekdayChips.vue'
 import IngredientRows from './IngredientRows.vue'
@@ -28,6 +29,13 @@ const emit = defineEmits<{ close: []; save: [meal: Meal]; delete: [id: string] }
 const app = useAppStore()
 const draft = ref<MealDraft | null>(null)
 const form = useTemplateRef('form')
+const ids = {
+  title: useId(),
+  slots: useId(),
+  kashrut: useId(),
+  prep: useId(),
+  leftovers: useId(),
+}
 
 watch(
   () => props.meal,
@@ -44,7 +52,7 @@ const open = computed({
   },
 })
 
-const slots = computed(() => app.household.slots)
+const slotChoices = computed(() => app.household.slots.map((s) => ({ value: s.id, title: s.name })))
 /** The soft version only matters if someone needs soft food (or one was already entered). */
 const showSoft = computed(
   () => app.household.eaters.some((e) => e.softFood) || !!draft.value?.softVersion,
@@ -68,11 +76,16 @@ async function save() {
 </script>
 
 <template>
-  <v-dialog v-model="open" fullscreen transition="dialog-bottom-transition">
+  <v-dialog
+    v-model="open"
+    :aria-labelledby="ids.title"
+    fullscreen
+    transition="dialog-bottom-transition"
+  >
     <v-card v-if="draft">
       <v-toolbar color="primary">
         <v-btn icon="mdi-close" aria-label="Cancel" @click="emit('close')" />
-        <v-toolbar-title>{{ isNew ? 'New meal' : 'Edit meal' }}</v-toolbar-title>
+        <v-toolbar-title :id="ids.title">{{ isNew ? 'New meal' : 'Edit meal' }}</v-toolbar-title>
         <v-toolbar-items>
           <v-btn variant="text" data-test="save" @click="save">Save</v-btn>
         </v-toolbar-items>
@@ -90,53 +103,42 @@ async function save() {
 
           <v-input :model-value="draft.slots" :rules="[slotsRule]" class="mb-2">
             <div class="w-100">
-              <div class="text-subtitle-1">Meal slots it can fill</div>
-              <v-chip-group v-model="draft.slots" multiple column selected-class="text-primary">
-                <v-chip
-                  v-for="s in slots"
-                  :key="s.id"
-                  :value="s.id"
-                  filter
-                  variant="outlined"
-                  size="large"
-                >
-                  {{ s.name }}
-                </v-chip>
-              </v-chip-group>
+              <div :id="ids.slots" class="text-subtitle-1">Meal slots it can fill</div>
+              <ChoiceChips
+                v-model="draft.slots"
+                :items="slotChoices"
+                :labelledby="ids.slots"
+                size="large"
+                variant="outlined"
+                column
+                selected-class="text-primary"
+              />
             </div>
           </v-input>
 
-          <div class="text-subtitle-1">Meat, dairy or parve</div>
-          <v-chip-group v-model="draft.kashrut" mandatory column class="mb-2">
-            <v-chip
-              v-for="k in KASHRUT_LABELS"
-              :key="k.value"
-              :value="k.value"
-              :color="k.color"
-              :prepend-icon="k.icon"
-              filter
-              variant="outlined"
-              size="large"
-            >
-              {{ k.title }}
-            </v-chip>
-          </v-chip-group>
+          <div :id="ids.kashrut" class="text-subtitle-1">Meat, dairy or parve</div>
+          <ChoiceChips
+            v-model="draft.kashrut"
+            :items="KASHRUT_LABELS"
+            :labelledby="ids.kashrut"
+            size="large"
+            variant="outlined"
+            mandatory
+            column
+            class="mb-2"
+          />
 
-          <div class="text-subtitle-1">How it's made</div>
-          <v-chip-group v-model="draft.prep" mandatory column class="mb-2">
-            <v-chip
-              v-for="p in PREP_LABELS"
-              :key="p.value"
-              :value="p.value"
-              :color="p.color"
-              :prepend-icon="p.icon"
-              filter
-              variant="outlined"
-              size="large"
-            >
-              {{ p.title }}
-            </v-chip>
-          </v-chip-group>
+          <div :id="ids.prep" class="text-subtitle-1">How it's made</div>
+          <ChoiceChips
+            v-model="draft.prep"
+            :items="PREP_LABELS"
+            :labelledby="ids.prep"
+            size="large"
+            variant="outlined"
+            mandatory
+            column
+            class="mb-2"
+          />
 
           <WeekdayChips
             v-model="draft.days"
@@ -200,19 +202,16 @@ async function save() {
             hide-details
           />
 
-          <div class="text-subtitle-1 mt-2">Cook double: leftovers go to</div>
-          <v-chip-group v-model="draft.leftoversFor" multiple column selected-class="text-primary">
-            <v-chip
-              v-for="s in slots"
-              :key="s.id"
-              :value="s.id"
-              filter
-              variant="outlined"
-              size="large"
-            >
-              {{ s.name }}
-            </v-chip>
-          </v-chip-group>
+          <div :id="ids.leftovers" class="text-subtitle-1 mt-2">Cook double: leftovers go to</div>
+          <ChoiceChips
+            v-model="draft.leftoversFor"
+            :items="slotChoices"
+            :labelledby="ids.leftovers"
+            size="large"
+            variant="outlined"
+            column
+            selected-class="text-primary"
+          />
           <div class="text-caption text-medium-emphasis mb-4">
             The next day, these meals are filled with this meal's leftovers.
           </div>

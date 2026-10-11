@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Swap one cell by hand: the core's meal options for it (good fits first, the rest with
 // their warnings), plus clear, keep-on-regenerate and the cell's special day, if it has one.
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import { useDisplay } from 'vuetify'
 
 import type { MealOption } from '@/core'
@@ -14,6 +14,7 @@ const props = defineProps<{ day: number; slotId: string }>()
 
 const app = useAppStore()
 const { smAndDown } = useDisplay()
+const titleId = useId()
 
 const slot = computed(() => app.household.slots.find((s) => s.id === props.slotId))
 const cell = computed(() => app.cell(props.day, props.slotId))
@@ -39,11 +40,17 @@ function pick(mealId: string | null) {
 </script>
 
 <template>
-  <v-dialog v-model="open" :fullscreen="smAndDown" max-width="600" scrollable>
+  <v-dialog
+    v-model="open"
+    :aria-labelledby="titleId"
+    :fullscreen="smAndDown"
+    max-width="600"
+    scrollable
+  >
     <v-card>
       <v-toolbar color="primary" density="comfortable">
         <v-btn icon="mdi-close" aria-label="Close" @click="open = false" />
-        <v-toolbar-title>
+        <v-toolbar-title :id="titleId">
           {{ slot?.name ?? slotId }}
           <div class="text-body-2">{{ dayLabel(day) }}</div>
         </v-toolbar-title>

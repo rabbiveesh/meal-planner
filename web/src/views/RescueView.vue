@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
+import ChoiceChips, { type Choice } from '@/components/ChoiceChips.vue'
 import RescueOptionList from '@/components/rescue/RescueOptionList.vue'
 import type { Kashrut, MealOption, RescueAnswer } from '@/core'
 import { kashrutLabel } from '@/lib/labels'
@@ -12,15 +13,17 @@ type KashrutChoice = Kashrut | 'either'
 
 const app = useAppStore()
 const router = useRouter()
+const ids = { slot: useId(), kashrut: useId(), question: useId(), options: useId() }
 
 const slots = computed(() => slotsOn(app.household, app.today))
 const slotId = ref<string | undefined>()
 const kashrut = ref<KashrutChoice | undefined>()
 const answers = ref<RescueAnswer[]>([])
 
-const kashrutChoices: { value: KashrutChoice; label: string }[] = [
-  ...(['meat', 'dairy'] as const).map((k) => ({ value: k, label: kashrutLabel(k).title })),
-  { value: 'either', label: 'Either' },
+const slotChoices = computed(() => slots.value.map((s) => ({ value: s.id, title: s.name })))
+const kashrutChoices: Choice<KashrutChoice>[] = [
+  ...(['meat', 'dairy'] as const).map((k) => ({ value: k, title: kashrutLabel(k).title })),
+  { value: 'either', title: 'Either' },
 ]
 
 function startOver() {
@@ -80,12 +83,16 @@ function use(option: MealOption) {
 
   <template v-else>
     <section class="mb-4">
-      <h2 class="text-h6 mb-2">Which meal?</h2>
-      <v-chip-group v-model="slotId" mandatory column selected-class="bg-primary">
-        <v-chip v-for="s in slots" :key="s.id" :value="s.id" size="large" filter>
-          {{ s.name }}
-        </v-chip>
-      </v-chip-group>
+      <h2 :id="ids.slot" class="text-h6 mb-2">Which meal?</h2>
+      <ChoiceChips
+        v-model="slotId"
+        :items="slotChoices"
+        :labelledby="ids.slot"
+        size="large"
+        mandatory
+        column
+        selected-class="bg-primary"
+      />
     </section>
 
     <v-card v-if="!hasRescueMeals" variant="tonal" color="info">
@@ -101,22 +108,28 @@ function use(option: MealOption) {
 
     <template v-else-if="result">
       <section class="mb-4">
-        <h2 class="text-h6 mb-2">Meat, dairy, or either?</h2>
-        <v-chip-group v-model="kashrut" column selected-class="bg-primary">
-          <v-chip v-for="k in kashrutChoices" :key="k.value" :value="k.value" size="large" filter>
-            {{ k.label }}
-          </v-chip>
-        </v-chip-group>
+        <h2 :id="ids.kashrut" class="text-h6 mb-2">Meat, dairy, or either?</h2>
+        <ChoiceChips
+          v-model="kashrut"
+          :items="kashrutChoices"
+          :labelledby="ids.kashrut"
+          size="large"
+          column
+          selected-class="bg-primary"
+        />
       </section>
 
       <v-card
         v-if="kashrut && result.nextQuestion"
+        role="group"
+        :aria-labelledby="ids.question"
         class="mb-4"
         color="primary"
         variant="tonal"
-        data-test="question"
       >
-        <v-card-title class="text-h6 text-wrap">{{ result.nextQuestion }}</v-card-title>
+        <v-card-title :id="ids.question" class="text-h6 text-wrap">
+          {{ result.nextQuestion }}
+        </v-card-title>
         <v-card-actions class="ga-2 px-4 pb-4">
           <v-btn
             class="flex-grow-1"
@@ -140,7 +153,7 @@ function use(option: MealOption) {
       </v-card>
 
       <section>
-        <h2 class="text-h6 mb-2">
+        <h2 :id="ids.options" class="text-h6 mb-2">
           <template v-if="result.options.length === 0">Nothing fits</template>
           <template v-else-if="result.ready"> {{ result.ready }} ready to go </template>
           <template v-else>Options</template>
@@ -148,7 +161,12 @@ function use(option: MealOption) {
         <p v-if="result.options.length === 0" class="text-body-1">
           None of your rescue meals fit these answers. Try "Either" or start over.
         </p>
-        <RescueOptionList :options="result.options" :ready="result.ready" @use="use" />
+        <RescueOptionList
+          :aria-labelledby="ids.options"
+          :options="result.options"
+          :ready="result.ready"
+          @use="use"
+        />
       </section>
     </template>
   </template>

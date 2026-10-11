@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // The two-week rotation as separate, uncrowded charts (at home / take-along / breakfast),
 // one week at a time, one card per day.
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import PlanDayCard from '@/components/plan/PlanDayCard.vue'
@@ -51,6 +51,7 @@ function openSwap(day: number, slotId: string) {
 }
 
 const confirmRegenerate = ref(false)
+const confirmTitleId = useId()
 const regenerated = ref(false)
 function regenerate() {
   app.regenerate()
@@ -136,8 +137,11 @@ function regenerate() {
 
     <SwapDialog v-if="swap" v-model="swapOpen" :day="swap.day" :slot-id="swap.slotId" />
 
-    <v-dialog v-model="confirmRegenerate" max-width="480">
-      <v-card title="Make a new plan?">
+    <v-dialog v-model="confirmRegenerate" :aria-labelledby="confirmTitleId" max-width="480">
+      <v-card>
+        <template #title>
+          <span :id="confirmTitleId">Make a new plan?</span>
+        </template>
         <v-card-text class="text-body-1">
           This fills both weeks again with fresh picks from your meals. Meals you picked by hand
           (marked “Hand-picked”) stay where they are.

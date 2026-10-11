@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // Shared shell for the Setup edit dialogs: a form with Save / Cancel and an optional
 // confirmed Remove. Full screen on phones, a normal dialog on bigger screens.
-import { useTemplateRef } from 'vue'
+import { useId, useTemplateRef } from 'vue'
 import { useDisplay } from 'vuetify'
 
 import ConfirmButton from '@/components/ConfirmButton.vue'
@@ -17,6 +17,7 @@ const emit = defineEmits<{ close: []; save: []; remove: [] }>()
 
 const { smAndDown } = useDisplay()
 const form = useTemplateRef('form')
+const titleId = useId()
 
 async function save() {
   const result = await form.value?.validate()
@@ -32,6 +33,7 @@ function onOpen(v: boolean) {
 <template>
   <v-dialog
     :model-value="open"
+    :aria-labelledby="titleId"
     :fullscreen="smAndDown"
     max-width="600"
     @update:model-value="onOpen"
@@ -39,7 +41,7 @@ function onOpen(v: boolean) {
     <v-card>
       <v-toolbar color="primary">
         <v-btn icon="mdi-close" aria-label="Cancel" @click="emit('close')" />
-        <v-toolbar-title>{{ title }}</v-toolbar-title>
+        <v-toolbar-title :id="titleId">{{ title }}</v-toolbar-title>
         <v-toolbar-items>
           <v-btn variant="text" data-test="save" @click="save">Save</v-btn>
         </v-toolbar-items>

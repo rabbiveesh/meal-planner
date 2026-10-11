@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { screen } from '@testing-library/dom'
+import { screen, within } from '@testing-library/dom'
 
 import { useShoppingStore } from '@/stores/shopping'
 import { mountComponent, setupStore } from '@/test-utils'
@@ -53,7 +53,8 @@ describe('shopping screens', () => {
     await user.click(screen.getByRole('button', { name: 'New trip' }))
     expect(store.app.data.shopping.marks).toEqual({ milk: 'have' })
 
-    await user.click(await screen.findByRole('button', { name: 'Start new trip' }))
+    const confirm = await screen.findByRole('dialog', { name: 'Start a new trip?' })
+    await user.click(within(confirm).getByRole('button', { name: 'Start new trip' }))
     expect(store.app.data.shopping.marks).toEqual({})
     expect(store.app.data.shopping.staples).toHaveLength(3)
   })

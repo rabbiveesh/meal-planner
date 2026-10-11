@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, useId, watch } from 'vue'
 
 import type { StapleItem } from '@/data/schema'
 import { useShoppingStore } from '@/stores/shopping'
@@ -12,6 +12,7 @@ const shopping = useShoppingStore()
 const name = ref('')
 const category = ref<string | null>('')
 const error = ref('')
+const titleId = useId()
 
 watch(
   open,
@@ -42,8 +43,11 @@ function remove() {
 </script>
 
 <template>
-  <v-dialog v-model="open" max-width="500">
-    <v-card :title="staple ? 'Edit item' : 'Add item'">
+  <v-dialog v-model="open" :aria-labelledby="titleId" max-width="500">
+    <v-card>
+      <template #title>
+        <span :id="titleId">{{ staple ? 'Edit item' : 'Add item' }}</span>
+      </template>
       <v-card-text>
         <v-form @submit.prevent="save">
           <v-text-field

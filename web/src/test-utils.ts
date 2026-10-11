@@ -1,6 +1,5 @@
 // Shared helpers for component and view tests. jsdom stubs, the jest-dom matchers and
 // cleanup between tests live in test-setup.ts.
-import { screen, waitFor } from '@testing-library/dom'
 import userEvent from '@testing-library/user-event'
 import { flushPromises, mount } from '@vue/test-utils'
 import type { Pinia } from 'pinia'
@@ -49,18 +48,4 @@ export async function mountRoute(location: RouteLocationRaw, store?: { pinia: Pi
   await router.push(location)
   await router.isReady()
   return { ...(await mountInApp(RouterView, [pinia, router])), router }
-}
-
-/**
- * The open dialog showing `text`. Vuetify dialogs have role="dialog" but no accessible name
- * (their card titles are not wired to aria-labelledby), so they are found by their content.
- */
-export function findDialog(text: string) {
-  return waitFor(() => {
-    // The last one is on top, e.g. a confirmation opened from an edit dialog.
-    const matches = screen.getAllByRole('dialog').filter((d) => d.textContent?.includes(text))
-    const dialog = matches[matches.length - 1]
-    if (!dialog) throw new Error(`No open dialog shows "${text}"`)
-    return dialog
-  })
 }

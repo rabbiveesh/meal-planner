@@ -2,15 +2,10 @@ import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { screen, within } from '@testing-library/dom'
 import { flushPromises } from '@vue/test-utils'
 
-import { findDialog, mountRoute, setupStore } from '@/test-utils'
+import { mountRoute, setupStore } from '@/test-utils'
 
-/**
- * The card for one day of the plan, found by its title (the cards have no accessible name).
- * Look it up before opening the swap dialog, which repeats the day's title.
- */
-function dayCard(label: string): HTMLElement {
-  return screen.getByText(label).closest<HTMLElement>('.v-card')!
-}
+/** The card for one day of the plan, e.g. "Monday A". */
+const dayCard = (label: string) => screen.getByRole('group', { name: label })
 
 /** One meal on a day card; its accessible name is "<slot>: <meal>. Tap to change." */
 function slotRow(card: HTMLElement, slot: string): HTMLElement {
@@ -37,8 +32,8 @@ describe('PlanView', () => {
     const store = await setupStore({ regenerate: true })
     const { app } = store
     const { router, user } = await mountRoute('/plan', store)
-    expect(screen.getByText('Sunday A')).toBeInTheDocument()
-    expect(screen.queryByText('Sunday B')).not.toBeInTheDocument()
+    expect(dayCard('Sunday A')).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Sunday B' })).not.toBeInTheDocument()
     expect(screen.getAllByText('Main meal').length).toBeGreaterThan(0)
     expect(screen.queryByText("Kids' take-along")).not.toBeInTheDocument()
     expect(dayCard('Monday A')).toHaveTextContent(app.meal(app.cell(1, 'main')?.mealId)!.name)
@@ -54,8 +49,8 @@ describe('PlanView', () => {
 
     await user.click(screen.getByRole('button', { name: 'Week B' }))
     await vi.waitFor(() => expect(router.currentRoute.value.query.week).toBe('B'))
-    expect(await screen.findByText('Sunday B')).toBeInTheDocument()
-    expect(screen.queryByText('Sunday A')).not.toBeInTheDocument()
+    expect(await screen.findByRole('group', { name: 'Sunday B' })).toBeInTheDocument()
+    expect(screen.queryByRole('group', { name: 'Sunday A' })).not.toBeInTheDocument()
   })
 
   it('swaps a meal by hand and marks it hand-picked', async () => {
@@ -65,7 +60,7 @@ describe('PlanView', () => {
     const before = app.cell(2, 'main')?.mealId
     const tuesday = dayCard('Tuesday A')
     await user.click(slotRow(tuesday, 'Main meal'))
-    const dialog = await findDialog('Good fits')
+    const dialog = await screen.findByRole('dialog', { name: 'Main meal Tuesday A' })
 
     const choice = app.household.meals.find(
       (m) => m.slots.includes('main') && m.id !== before && m.kashrut === 'parve',
@@ -81,7 +76,7 @@ describe('PlanView', () => {
   it('searches the swap list', async () => {
     const { user } = await mountRoute('/plan')
     await user.click(slotRow(dayCard('Sunday A'), 'Main meal'))
-    const dialog = await findDialog('Good fits')
+    const dialog = await screen.findByRole('dialog', { name: 'Main meal Sunday A' })
     await user.type(within(dialog).getByRole('textbox', { name: 'Search meals' }), 'mujadara')
     const items = within(dialog)
       .getAllByRole('listitem')
@@ -97,12 +92,12 @@ describe('PlanView', () => {
     const backup = app.meal(app.cell(0, 'lunch')?.mealId)!
     const sunday = dayCard('Sunday A')
     await user.click(slotRow(sunday, 'Our lunch'))
-    const dialog = await findDialog('Shabbos leftovers')
+    const dialog = await screen.findByRole('dialog', { name: 'Our lunch Sunday A' })
     await user.click(within(dialog).getByRole('checkbox', { name: 'Shabbos leftovers' }))
     expect(app.cell(0, 'lunch')?.specialActive).toBe(true)
 
     const card = within(sunday)
-    expect(card.getByText(backup.name)).toHaveClass('text-decoration-line-through')
+    expect(card.getByRole('deletion')).toHaveTextContent(backup.name)
     expect(card.getByText('Shabbos leftovers')).toBeInTheDocument()
   })
 
@@ -126,7 +121,7 @@ describe('PlanView', () => {
     const spy = vi.spyOn(app, 'regenerate')
     await user.click(screen.getByRole('button', { name: 'Make a new plan' }))
     expect(spy).not.toHaveBeenCalled()
-    const dialog = await findDialog('stay where they are')
+    const dialog = await screen.findByRole('dialog', { name: 'Make a new plan?' })
     await user.click(within(dialog).getByRole('button', { name: 'Make a new plan' }))
     expect(spy).toHaveBeenCalledOnce()
     expect(app.cell(3, 'main')?.mealId).toBe('risotto')

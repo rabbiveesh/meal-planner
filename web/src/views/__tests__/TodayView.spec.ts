@@ -42,18 +42,19 @@ describe('TodayView', () => {
     const store = await setupStore({ regenerate: true })
     const { app } = store
     const { user } = await mountRoute('/', store)
-    // Each question is a card without an accessible name; find it by its question.
+    const questions = within(screen.getByRole('region', { name: 'Questions this week' }))
     const card = within(
-      screen
-        .getByText('Any Shabbos leftovers for your Monday lunch?')
-        .closest<HTMLElement>('.v-card')!,
+      questions.getByRole('group', {
+        name: 'Monday A Any Shabbos leftovers for your Monday lunch?',
+      }),
     )
     // Until she says yes, the backup meal stays on the plan.
     expect(card.getByText(/^Planned:/)).toHaveTextContent('backup')
 
     await user.click(card.getByRole('button', { name: 'Yes' }))
     expect(app.cell(1, 'lunch')?.specialActive).toBe(true)
-    expect(card.getByRole('button', { name: 'Yes' })).toHaveAttribute('aria-pressed', 'true')
+    expect(card.getByRole('button', { name: 'Yes' })).toBePressed()
+    expect(card.getByRole('button', { name: 'No' })).not.toBePressed()
     expect(card.getByText(/^Planned:/)).toHaveTextContent('Shabbos leftovers')
 
     await user.click(card.getByRole('button', { name: 'No' }))

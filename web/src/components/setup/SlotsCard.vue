@@ -1,8 +1,9 @@
 <script setup lang="ts">
 // The meals of the day (slots): name, which chart, who eats when, days, repeat limit.
-import { computed, ref, toRaw } from 'vue'
+import { computed, ref, toRaw, useId } from 'vue'
 
 import type { SlotDef } from '@/core'
+import ChoiceChips from '@/components/ChoiceChips.vue'
 import WeekdayChips from '@/components/WeekdayChips.vue'
 import EditDialog from './EditDialog.vue'
 import { PLAN_VIEWS, viewLabel } from '@/lib/plan'
@@ -11,6 +12,10 @@ import { cleanSlot, mealsUsingSlot, move, newSlot, upsert } from '@/lib/househol
 import { useAppStore } from '@/stores/app'
 
 const app = useAppStore()
+const viewLabelId = useId()
+// Each row is named by its slot and described by its summary, at `${rowId}-<index>-...`.
+const rowId = useId()
+const viewChoices = PLAN_VIEWS.map((v) => ({ value: v.id, title: v.label }))
 const draft = ref<SlotDef | null>(null)
 const isNew = ref(false)
 
@@ -70,12 +75,17 @@ const someoneEats = () =>
       <v-list-item
         v-for="(s, i) in app.household.slots"
         :key="s.id"
-        :title="s.name"
-        :subtitle="summary(s)"
+        :aria-labelledby="`${rowId}-${i}-name`"
+        :aria-describedby="`${rowId}-${i}-summary`"
         lines="two"
-        data-test="slot"
         @click="edit(s)"
       >
+        <template #title>
+          <span :id="`${rowId}-${i}-name`">{{ s.name }}</span>
+        </template>
+        <template #subtitle>
+          <span :id="`${rowId}-${i}-summary`">{{ summary(s) }}</span>
+        </template>
         <template #append>
           <v-btn
             icon="mdi-arrow-up"
@@ -119,19 +129,17 @@ const someoneEats = () =>
           :rules="[required]"
           data-test="name"
         />
-        <div class="text-subtitle-1">Shown on chart</div>
-        <v-chip-group v-model="draft.view" mandatory column class="mb-2">
-          <v-chip
-            v-for="v in PLAN_VIEWS"
-            :key="v.id"
-            :value="v.id"
-            filter
-            variant="outlined"
-            size="large"
-          >
-            {{ v.label }}
-          </v-chip>
-        </v-chip-group>
+        <div :id="viewLabelId" class="text-subtitle-1">Shown on chart</div>
+        <ChoiceChips
+          v-model="draft.view"
+          :items="viewChoices"
+          :labelledby="viewLabelId"
+          size="large"
+          variant="outlined"
+          mandatory
+          column
+          class="mb-2"
+        />
         <v-row dense>
           <v-col cols="6">
             <v-text-field

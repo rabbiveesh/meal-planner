@@ -1,9 +1,10 @@
 <script setup lang="ts">
 // Weekly rules: cook-fresh days, the main meal that must be made ahead on other days,
 // and recurring "maybe" days (Shabbos leftovers, Mom bringing supper).
-import { computed, ref, toRaw } from 'vue'
+import { computed, ref, toRaw, useId } from 'vue'
 
 import type { Rules, SpecialDay } from '@/core'
+import ChoiceChips from '@/components/ChoiceChips.vue'
 import WeekdayChips from '@/components/WeekdayChips.vue'
 import EditDialog from './EditDialog.vue'
 import { KASHRUT_LABELS, kashrutLabel, shortWeekday } from '@/lib/labels'
@@ -12,6 +13,7 @@ import { cleanSpecialDay, newSpecialDay, withRules } from '@/lib/household'
 import { useAppStore } from '@/stores/app'
 
 const app = useAppStore()
+const kashrutLabelId = useId()
 
 function setRules(rules: Partial<Rules>) {
   app.setHousehold(withRules(toRaw(app.household), rules))
@@ -149,21 +151,16 @@ const slotRequired = (v: string | null) => !!v || 'Pick a meal of the day'
             />
           </v-col>
         </v-row>
-        <div class="text-subtitle-1">When it happens, it's</div>
-        <v-chip-group v-model="draft.kashrut" mandatory column>
-          <v-chip
-            v-for="k in KASHRUT_LABELS"
-            :key="k.value"
-            :value="k.value"
-            :color="k.color"
-            :prepend-icon="k.icon"
-            filter
-            variant="outlined"
-            size="large"
-          >
-            {{ k.title }}
-          </v-chip>
-        </v-chip-group>
+        <div :id="kashrutLabelId" class="text-subtitle-1">When it happens, it's</div>
+        <ChoiceChips
+          v-model="draft.kashrut"
+          :items="KASHRUT_LABELS"
+          :labelledby="kashrutLabelId"
+          size="large"
+          variant="outlined"
+          mandatory
+          column
+        />
       </template>
     </EditDialog>
   </v-card>

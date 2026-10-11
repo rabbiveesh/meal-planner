@@ -3,6 +3,7 @@
 import { ref, toRaw } from 'vue'
 
 import type { Eater } from '@/core'
+import ChoiceChips from '@/components/ChoiceChips.vue'
 import EditDialog from './EditDialog.vue'
 import { EATER_KIND_LABELS, eaterKindLabel } from '@/lib/labels'
 import { cleanEater, newEater, upsert } from '@/lib/household'
@@ -11,6 +12,8 @@ import { useAppStore } from '@/stores/app'
 const app = useAppStore()
 const draft = ref<Eater | null>(null)
 const isNew = ref(false)
+// The chips keep the group's colour, so only value, title and icon are shown.
+const kindChoices = EATER_KIND_LABELS.map(({ value, title, icon }) => ({ value, title, icon }))
 
 function add() {
   draft.value = newEater()
@@ -75,19 +78,15 @@ const required = (v: string) => !!v?.trim() || 'Enter a name'
     >
       <template v-if="draft">
         <v-text-field v-model="draft.name" label="Name" :rules="[required]" data-test="name" />
-        <v-chip-group v-model="draft.kind" mandatory class="mb-2">
-          <v-chip
-            v-for="k in EATER_KIND_LABELS"
-            :key="k.value"
-            :value="k.value"
-            :prepend-icon="k.icon"
-            filter
-            variant="outlined"
-            size="large"
-          >
-            {{ k.title }}
-          </v-chip>
-        </v-chip-group>
+        <ChoiceChips
+          v-model="draft.kind"
+          :items="kindChoices"
+          label="Adult or child"
+          size="large"
+          variant="outlined"
+          mandatory
+          class="mb-2"
+        />
         <v-number-input
           :model-value="draft.waitHours ?? 0"
           label="Hours waited after meat before dairy"

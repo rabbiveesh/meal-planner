@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // One day of one chart: a big tappable row per slot. Tapping a row asks the parent to swap it.
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 
 import type { Conflict, SlotDef } from '@/core'
 import { cellDisplay, conflictsFor } from '@/lib/plan'
@@ -19,6 +19,7 @@ const props = defineProps<{
 const emit = defineEmits<{ pick: [slotId: string] }>()
 
 const app = useAppStore()
+const titleId = useId()
 
 const rows = computed(() =>
   props.slots.map((slot) => {
@@ -36,9 +37,14 @@ const rows = computed(() =>
 </script>
 
 <template>
-  <v-card :color="isToday ? 'primary' : undefined" :variant="isToday ? 'outlined' : 'elevated'">
+  <v-card
+    role="group"
+    :aria-labelledby="titleId"
+    :color="isToday ? 'primary' : undefined"
+    :variant="isToday ? 'outlined' : 'elevated'"
+  >
     <v-card-title class="d-flex align-center text-h6">
-      {{ dayLabel(day) }}
+      <span :id="titleId">{{ dayLabel(day) }}</span>
       <v-chip v-if="isToday" class="ml-2" color="primary" size="small" label>Today</v-chip>
     </v-card-title>
 
@@ -62,12 +68,15 @@ const rows = computed(() =>
             <v-icon icon="mdi-plus-circle-outline" size="small" /> Pick a meal
           </div>
 
-          <div
+          <!-- The backup meal no longer applies while the special day is on. HTML maps <s> to the
+               deletion role; it is spelled out because aria-query (Testing Library) maps only <del>. -->
+          <s
             v-if="row.display.backup"
-            class="text-body-2 text-medium-emphasis text-decoration-line-through"
+            role="deletion"
+            class="d-block text-body-2 text-medium-emphasis"
           >
             {{ row.display.backup }}
-          </div>
+          </s>
 
           <div
             v-for="v in row.display.versions"

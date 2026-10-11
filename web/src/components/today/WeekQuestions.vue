@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 
 import { dayLabel } from '@/lib/rotation'
 import { specialsThisWeek } from '@/lib/today'
@@ -8,6 +8,9 @@ import { useAppStore } from '@/stores/app'
 const props = defineProps<{ today: number }>()
 
 const app = useAppStore()
+const headingId = useId()
+// Each question card is named by its day and question, at `${cardId}-<key>-day` / `-question`.
+const cardId = useId()
 
 const questions = computed(() =>
   specialsThisWeek(app.household, props.today).map(({ day, special }) => {
@@ -25,11 +28,21 @@ const questions = computed(() =>
 </script>
 
 <template>
-  <section v-if="questions.length" class="mb-4">
-    <h2 class="text-h6 mb-2">Questions this week</h2>
-    <v-card v-for="q in questions" :key="q.key" class="mb-3">
-      <v-card-subtitle class="pt-3">{{ dayLabel(q.day) }}</v-card-subtitle>
-      <v-card-text class="text-body-1 pb-2">{{ q.special.question }}</v-card-text>
+  <section v-if="questions.length" :aria-labelledby="headingId" class="mb-4">
+    <h2 :id="headingId" class="text-h6 mb-2">Questions this week</h2>
+    <v-card
+      v-for="q in questions"
+      :key="q.key"
+      role="group"
+      :aria-labelledby="`${cardId}-${q.key}-day ${cardId}-${q.key}-question`"
+      class="mb-3"
+    >
+      <v-card-subtitle :id="`${cardId}-${q.key}-day`" class="pt-3">
+        {{ dayLabel(q.day) }}
+      </v-card-subtitle>
+      <v-card-text :id="`${cardId}-${q.key}-question`" class="text-body-1 pb-2">
+        {{ q.special.question }}
+      </v-card-text>
       <v-card-actions class="ga-2 px-4">
         <v-btn
           class="flex-grow-1"

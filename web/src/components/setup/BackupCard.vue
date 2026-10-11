@@ -1,6 +1,6 @@
 <script setup lang="ts">
 // Backup to a file, restore from one, or start over from the starter template.
-import { ref, toRaw } from 'vue'
+import { ref, toRaw, useId } from 'vue'
 
 import type { AppData } from '@/data/schema'
 import ConfirmButton from '@/components/ConfirmButton.vue'
@@ -13,6 +13,7 @@ const message = ref('')
 /** A read backup waiting for her to confirm it should replace everything. */
 const pending = ref<AppData | null>(null)
 const file = ref<File | File[] | null>(null)
+const restoreTitleId = useId()
 
 function download() {
   error.value = ''
@@ -103,8 +104,16 @@ function loadStarter() {
       </div>
     </v-card-text>
 
-    <v-dialog :model-value="!!pending" max-width="420" @update:model-value="pending = null">
-      <v-card title="Restore this backup?">
+    <v-dialog
+      :model-value="!!pending"
+      :aria-labelledby="restoreTitleId"
+      max-width="420"
+      @update:model-value="pending = null"
+    >
+      <v-card>
+        <template #title>
+          <span :id="restoreTitleId">Restore this backup?</span>
+        </template>
         <v-card-text>
           It has {{ pending?.household?.meals?.length ?? 0 }} meals and
           {{ pending?.household?.eaters?.length ?? 0 }} people. It replaces everything on this

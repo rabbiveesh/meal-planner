@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, useId } from 'vue'
 
 import PantryCheck from '@/components/shopping/PantryCheck.vue'
 import ShoppingList from '@/components/shopping/ShoppingList.vue'
@@ -13,6 +13,7 @@ const allChecked = shopping.items.length > 0 && shopping.checkedCount === shoppi
 const tab = ref<'staples' | 'check' | 'list'>(allChecked ? 'list' : 'check')
 
 const confirmOpen = ref(false)
+const confirmTitleId = useId()
 function startNewTrip() {
   shopping.newTrip()
   confirmOpen.value = false
@@ -42,11 +43,13 @@ function startNewTrip() {
       <v-tabs-window-item value="list"><ShoppingList /></v-tabs-window-item>
     </v-tabs-window>
 
-    <v-dialog v-model="confirmOpen" max-width="420">
+    <v-dialog v-model="confirmOpen" :aria-labelledby="confirmTitleId" max-width="420">
       <v-card
-        title="Start a new trip?"
         text="This clears the pantry check and the ticks on the shopping list. Your master list stays."
       >
+        <template #title>
+          <span :id="confirmTitleId">Start a new trip?</span>
+        </template>
         <v-card-actions>
           <v-spacer />
           <v-btn @click="confirmOpen = false">Cancel</v-btn>

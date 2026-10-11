@@ -1,15 +1,30 @@
 <script setup lang="ts">
+import { useId } from 'vue'
+
 import type { Meal } from '@/core'
 import { kashrutLabel, prepLabel } from '@/lib/labels'
 
 defineProps<{ meal: Meal }>()
 defineEmits<{ edit: [] }>()
+
+// The row is named by the meal and described by its chips.
+const nameId = useId()
+const detailsId = useId()
 </script>
 
 <template>
-  <v-list-item :title="meal.name" lines="two" class="py-2" @click="$emit('edit')">
+  <v-list-item
+    :aria-labelledby="nameId"
+    :aria-describedby="detailsId"
+    lines="two"
+    class="py-2"
+    @click="$emit('edit')"
+  >
+    <template #title>
+      <span :id="nameId">{{ meal.name }}</span>
+    </template>
     <template #subtitle>
-      <div class="d-flex flex-wrap ga-1 mt-1">
+      <div :id="detailsId" class="d-flex flex-wrap ga-1 mt-1">
         <v-chip
           :color="kashrutLabel(meal.kashrut).color"
           :prepend-icon="kashrutLabel(meal.kashrut).icon"
