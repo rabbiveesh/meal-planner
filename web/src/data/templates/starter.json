@@ -1,0 +1,433 @@
+{
+  "version": 1,
+  "household": {
+    "eaters": [
+      {
+        "id": "adult1",
+        "name": "Parent 1",
+        "kind": "adult",
+        "waitHours": 6
+      },
+      {
+        "id": "adult2",
+        "name": "Parent 2",
+        "kind": "adult",
+        "waitHours": 6
+      },
+      {
+        "id": "child1",
+        "name": "Child 1",
+        "kind": "child",
+        "waitHours": 3
+      },
+      {
+        "id": "child2",
+        "name": "Child 2",
+        "kind": "child",
+        "waitHours": 0
+      },
+      {
+        "id": "child3",
+        "name": "Child 3",
+        "kind": "child",
+        "waitHours": 0,
+        "softFood": true
+      }
+    ],
+    "slots": [
+      {
+        "id": "kidsBreakfast",
+        "name": "Kids' breakfast",
+        "view": "breakfast",
+        "childTime": "07:00",
+        "days": [0, 1, 2, 3, 4, 5],
+        "minRepeatDays": 1
+      },
+      {
+        "id": "ourBreakfast",
+        "name": "Our breakfast",
+        "view": "breakfast",
+        "adultTime": "07:30",
+        "days": [0, 1, 2, 3, 4, 5],
+        "minRepeatDays": 1
+      },
+      {
+        "id": "takeAlong",
+        "name": "Kids' take-along",
+        "view": "takeAlong",
+        "childTime": "10:00",
+        "days": [0, 1, 2, 3, 4, 5],
+        "minRepeatDays": 3,
+        "prepNightBefore": true
+      },
+      {
+        "id": "lunch",
+        "name": "Our lunch",
+        "view": "takeAlong",
+        "adultTime": "13:00",
+        "days": [0, 1, 2, 3, 4, 5],
+        "minRepeatDays": 2,
+        "prepNightBefore": true
+      },
+      {
+        "id": "fridayLunch",
+        "name": "Friday lunch",
+        "view": "home",
+        "childTime": "12:30",
+        "days": [5],
+        "minRepeatDays": 14
+      },
+      {
+        "id": "main",
+        "name": "Main meal",
+        "view": "home",
+        "childTime": "15:00",
+        "adultTime": "19:30",
+        "days": [0, 1, 2, 3, 4],
+        "minRepeatDays": 14
+      },
+      {
+        "id": "light",
+        "name": "Kids' light meal",
+        "view": "home",
+        "childTime": "18:00",
+        "days": [0, 1, 2, 3, 4],
+        "minRepeatDays": 7
+      }
+    ],
+    "meals": [
+      {
+        "id": "schnitzel-chips-and-cut-veg",
+        "name": "Schnitzel, chips and cut veg",
+        "slots": ["main"],
+        "kashrut": "meat",
+        "prep": "ahead",
+        "ingredients": [
+          {
+            "item": "Chicken",
+            "perAdult": 2,
+            "perChild": 1,
+            "unit": "servings",
+            "category": "Meat & chicken"
+          }
+        ],
+        "prepTasks": ["Take the chicken out of the freezer"]
+      },
+      {
+        "id": "chicken-soup-with-ramen",
+        "name": "Chicken soup with ramen",
+        "slots": ["main"],
+        "kashrut": "meat",
+        "prep": "ahead",
+        "ingredients": [
+          {
+            "item": "Chicken",
+            "perAdult": 2,
+            "perChild": 1,
+            "unit": "servings",
+            "category": "Meat & chicken"
+          }
+        ]
+      },
+      {
+        "id": "risotto",
+        "name": "Risotto",
+        "slots": ["main"],
+        "kashrut": "parve",
+        "prep": "fresh",
+        "notes": "Check meat/dairy/parve"
+      },
+      {
+        "id": "crockpot-chicken-and-baked-potatoes",
+        "name": "Crockpot chicken and baked potatoes",
+        "slots": ["main"],
+        "kashrut": "meat",
+        "prep": "ahead",
+        "ingredients": [
+          {
+            "item": "Chicken",
+            "perAdult": 2,
+            "perChild": 1,
+            "unit": "servings",
+            "category": "Meat & chicken"
+          }
+        ],
+        "prepTasks": ["Take the chicken out of the freezer"]
+      },
+      {
+        "id": "sous-vide-chicken-and-baked-potatoes",
+        "name": "Sous vide chicken and baked potatoes",
+        "slots": ["main"],
+        "kashrut": "meat",
+        "prep": "ahead",
+        "ingredients": [
+          {
+            "item": "Chicken",
+            "perAdult": 2,
+            "perChild": 1,
+            "unit": "servings",
+            "category": "Meat & chicken"
+          }
+        ],
+        "prepTasks": ["Take the chicken out of the freezer"]
+      },
+      {
+        "id": "chicken-on-the-bone-with-rice-bulgur-or-brown-rice-and-lettuce-salad",
+        "name": "Chicken on the bone with rice, bulgur or brown rice and lettuce salad",
+        "slots": ["main"],
+        "kashrut": "meat",
+        "prep": "ahead",
+        "ingredients": [
+          {
+            "item": "Chicken",
+            "perAdult": 2,
+            "perChild": 1,
+            "unit": "servings",
+            "category": "Meat & chicken"
+          }
+        ],
+        "prepTasks": ["Take the chicken out of the freezer"]
+      },
+      {
+        "id": "shawarma-chicken-pitas-chips-and-salad",
+        "name": "Shawarma chicken pitas, chips and salad",
+        "slots": ["main"],
+        "kashrut": "meat",
+        "prep": "ahead",
+        "ingredients": [
+          {
+            "item": "Chicken",
+            "perAdult": 2,
+            "perChild": 1,
+            "unit": "servings",
+            "category": "Meat & chicken"
+          }
+        ],
+        "prepTasks": ["Take the chicken out of the freezer"],
+        "kidsVersion": "Pitas and chips",
+        "adultsVersion": "With rice"
+      },
+      {
+        "id": "stir-fry-and-rice",
+        "name": "Stir fry and rice",
+        "slots": ["main"],
+        "kashrut": "meat",
+        "prep": "ahead"
+      },
+      {
+        "id": "hamburgers",
+        "name": "Hamburgers",
+        "slots": ["main"],
+        "kashrut": "meat",
+        "prep": "ahead",
+        "prepTasks": ["Take the ground meat out of the freezer"]
+      },
+      {
+        "id": "easy-chicken-breast",
+        "name": "Easy chicken breast",
+        "slots": ["main"],
+        "kashrut": "meat",
+        "prep": "ahead",
+        "ingredients": [
+          {
+            "item": "Chicken",
+            "perAdult": 2,
+            "perChild": 1,
+            "unit": "servings",
+            "category": "Meat & chicken"
+          }
+        ],
+        "prepTasks": ["Take the chicken out of the freezer"]
+      },
+      {
+        "id": "mujadara-and-israeli-salad",
+        "name": "Mujadara and Israeli salad",
+        "slots": ["main"],
+        "kashrut": "parve",
+        "prep": "fresh"
+      },
+      {
+        "id": "veg-soup-curry-and-cheese-toasts",
+        "name": "Veg soup, curry and cheese toasts",
+        "slots": ["main"],
+        "kashrut": "dairy",
+        "prep": "fresh"
+      },
+      {
+        "id": "halloumi-and-sourdough-toast",
+        "name": "Halloumi and sourdough toast",
+        "slots": ["main"],
+        "kashrut": "dairy",
+        "prep": "fresh",
+        "fun": true
+      },
+      {
+        "id": "zaatar-pitas-and-omelettes",
+        "name": "Zaatar pitas and omelettes",
+        "slots": ["light"],
+        "kashrut": "parve",
+        "prep": "fresh"
+      },
+      {
+        "id": "french-toast-pancakes-or-crepes-with-cut-fruit",
+        "name": "French toast, pancakes or crepes with cut fruit",
+        "slots": ["light"],
+        "kashrut": "dairy",
+        "prep": "fresh"
+      },
+      {
+        "id": "pasta-cheese-and-cut-veg-platter",
+        "name": "Pasta, cheese and cut veg platter",
+        "slots": ["light"],
+        "kashrut": "dairy",
+        "prep": "fresh"
+      },
+      {
+        "id": "muffins-and-yogurts",
+        "name": "Muffins and yogurts",
+        "slots": ["light"],
+        "kashrut": "dairy",
+        "prep": "instant"
+      },
+      {
+        "id": "shakes-or-yogurts-with-toppings",
+        "name": "Shakes or yogurts with toppings",
+        "slots": ["light"],
+        "kashrut": "dairy",
+        "prep": "instant"
+      },
+      {
+        "id": "hard-boiled-eggs",
+        "name": "Hard boiled eggs",
+        "slots": ["light"],
+        "kashrut": "parve",
+        "prep": "ahead"
+      },
+      {
+        "id": "pita-pizzas-and-chips",
+        "name": "Pita pizzas and chips",
+        "slots": ["fridayLunch"],
+        "kashrut": "dairy",
+        "prep": "fresh"
+      },
+      {
+        "id": "bagels-from-the-freezer",
+        "name": "Bagels from the freezer",
+        "slots": ["takeAlong"],
+        "kashrut": "parve",
+        "prep": "instant",
+        "prepTasks": ["Take the bagels out of the freezer"]
+      },
+      {
+        "id": "prepped-salad",
+        "name": "Prepped salad",
+        "slots": ["lunch"],
+        "kashrut": "parve",
+        "prep": "ahead"
+      },
+      {
+        "id": "chummus-and-toppings",
+        "name": "Chummus and toppings",
+        "slots": ["lunch"],
+        "kashrut": "parve",
+        "prep": "ahead"
+      },
+      {
+        "id": "chicken-salad",
+        "name": "Chicken salad",
+        "slots": ["lunch"],
+        "kashrut": "meat",
+        "prep": "ahead"
+      },
+      {
+        "id": "protein-shake-with-berries",
+        "name": "Protein shake with berries",
+        "slots": ["ourBreakfast"],
+        "kashrut": "dairy",
+        "prep": "instant"
+      },
+      {
+        "id": "eggs-and-toast",
+        "name": "Eggs and toast",
+        "slots": ["ourBreakfast"],
+        "kashrut": "parve",
+        "prep": "fresh"
+      },
+      {
+        "id": "eggs-and-rice-cakes",
+        "name": "Eggs and rice cakes",
+        "slots": ["ourBreakfast"],
+        "kashrut": "parve",
+        "prep": "fresh"
+      },
+      {
+        "id": "eggs-and-chickpea-cakes",
+        "name": "Eggs and chickpea cakes",
+        "slots": ["ourBreakfast"],
+        "kashrut": "parve",
+        "prep": "fresh"
+      },
+      {
+        "id": "cereal",
+        "name": "Cereal",
+        "slots": ["kidsBreakfast"],
+        "kashrut": "dairy",
+        "prep": "instant"
+      },
+      {
+        "id": "hot-dogs",
+        "name": "Hot dogs",
+        "slots": ["main", "light"],
+        "kashrut": "meat",
+        "prep": "instant",
+        "rescue": true,
+        "rescueQuestions": ["Do you have hot dogs in the fridge?"]
+      },
+      {
+        "id": "french-fries",
+        "name": "French fries",
+        "slots": ["main", "light"],
+        "kashrut": "parve",
+        "prep": "instant",
+        "rescue": true,
+        "rescueQuestions": ["Do you have French fries in the freezer?"]
+      }
+    ],
+    "rules": {
+      "freshDays": [2],
+      "mainSlotId": "main",
+      "specialDays": [
+        {
+          "day": 0,
+          "slotId": "lunch",
+          "label": "Shabbos leftovers",
+          "question": "Any Shabbos leftovers for your Sunday lunch?",
+          "kashrut": "meat"
+        },
+        {
+          "day": 1,
+          "slotId": "lunch",
+          "label": "Shabbos leftovers",
+          "question": "Any Shabbos leftovers for your Monday lunch?",
+          "kashrut": "meat"
+        },
+        {
+          "day": 3,
+          "slotId": "light",
+          "label": "Mom's supper",
+          "question": "Is Mom bringing supper on Wednesday?",
+          "kashrut": "meat"
+        }
+      ]
+    }
+  },
+  "plan": {
+    "cells": []
+  },
+  "rotationStart": "2026-10-11",
+  "shopping": {
+    "staples": [],
+    "marks": {},
+    "bought": []
+  }
+}
