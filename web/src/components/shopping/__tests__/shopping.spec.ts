@@ -1,112 +1,60 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import type { Component } from 'vue'
-import { flushPromises, mount } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
-import { createVuetify } from 'vuetify'
-import * as components from 'vuetify/components'
-import * as directives from 'vuetify/directives'
+import { describe, expect, it } from 'vitest'
+import { screen } from '@testing-library/dom'
 
-import { importJson } from '@/data/repository'
-import starter from '@/data/templates/starter.json'
-import { useDriver } from '@/storage'
-import { useAppStore } from '@/stores/app'
 import { useShoppingStore } from '@/stores/shopping'
+import { mountComponent, setupStore } from '@/test-utils'
 import ShoppingView from '@/views/ShoppingView.vue'
 import PantryCheck from '../PantryCheck.vue'
 import ShoppingList from '../ShoppingList.vue'
 
-// jsdom lacks what Vuetify's overlays measure with.
-globalThis.ResizeObserver ??= class {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-}
-globalThis.visualViewport ??= Object.assign(new EventTarget(), {
-  width: 400,
-  height: 800,
-  offsetLeft: 0,
-  offsetTop: 0,
-  pageLeft: 0,
-  pageTop: 0,
-  scale: 1,
-  onresize: null,
-  onscroll: null,
-  onscrollend: null,
-}) as VisualViewport
-
-const vuetify = createVuetify({ components, directives })
-const mountIt = (component: Component) =>
-  mount(component, { global: { plugins: [vuetify] }, attachTo: document.body })
-
 async function setup() {
-  const pinia = createPinia()
-  setActivePinia(pinia)
-  const app = useAppStore()
-  await app.load()
-  app.replaceAll(importJson(JSON.stringify(starter)))
+  const store = await setupStore()
   // Staples only, so the test does not depend on the starter template's meals.
-  app.data.plan = { cells: [] }
+  store.app.data.plan = { cells: [] }
   const shopping = useShoppingStore()
   shopping.importStaples('Dairy:\nMilk\nYogurt\nBakery:\nPitas')
-  return { app, shopping }
-}
-
-function button(wrapper: ReturnType<typeof mount>, text: string) {
-  const b = wrapper.findAll('button').find((x) => x.text().includes(text))
-  if (!b) throw new Error(`no button "${text}"`)
-  return b
+  return { ...store, shopping }
 }
 
 describe('shopping screens', () => {
-  beforeEach(() => {
-    useDriver()
-    document.body.innerHTML = ''
-  })
-
   it('pantry check goes one item at a time and counts progress', async () => {
-    const { app } = await setup()
-    const wrapper = mountIt(PantryCheck)
-    expect(wrapper.text()).toContain('0 of 3 checked')
-    expect(wrapper.find('.text-h4').text()).toBe('Milk')
+    const store = await setup()
+    const { user } = await mountComponent(PantryCheck, store)
+    expect(screen.getByText('0 of 3 checked')).toBeInTheDocument()
+    expect(screen.getByText('Milk')).toBeInTheDocument()
 
-    await button(wrapper, 'Have enough').trigger('click')
-    expect(wrapper.find('.text-h4').text()).toBe('Yogurt')
-    await button(wrapper, 'Need').trigger('click')
-    expect(wrapper.text()).toContain('2 of 3 checked')
-    expect(app.data.shopping.marks).toEqual({ milk: 'have', yogurt: 'need' })
-    wrapper.unmount()
+    await user.click(screen.getByRole('button', { name: 'Have enough' }))
+    expect(screen.getByText('Yogurt')).toBeInTheDocument()
+    expect(screen.queryByText('Milk')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Need' }))
+    expect(screen.getByText('2 of 3 checked')).toBeInTheDocument()
+    expect(store.app.data.shopping.marks).toEqual({ milk: 'have', yogurt: 'need' })
   })
 
   it('shopping list shows everything not marked "have" and ticks items off', async () => {
-    const { app, shopping } = await setup()
-    shopping.mark(shopping.items[0]!, 'have')
-    const wrapper = mountIt(ShoppingList)
-    expect(wrapper.text()).not.toContain('Milk')
-    expect(wrapper.text()).toContain('Yogurt')
-    expect(wrapper.text()).toContain('0 of 2 in the cart')
+    const store = await setup()
+    store.shopping.mark(store.shopping.items[0]!, 'have')
+    const { user } = await mountComponent(ShoppingList, store)
+    expect(screen.queryByText('Milk')).not.toBeInTheDocument()
+    expect(screen.getByText('Yogurt')).toBeInTheDocument()
+    expect(screen.getByText('0 of 2 in the cart')).toBeInTheDocument()
 
-    const pitas = wrapper.findAll('.v-list-item').find((x) => x.text().includes('Pitas'))!
-    await pitas.trigger('click')
-    expect(app.data.shopping.bought).toEqual(['pitas'])
-    expect(wrapper.text()).toContain('1 of 2 in the cart')
-    wrapper.unmount()
+    // Tapping anywhere on the row ticks it, not only the checkbox.
+    await user.click(screen.getByText('Pitas'))
+    expect(store.app.data.shopping.bought).toEqual(['pitas'])
+    expect(screen.getByText('1 of 2 in the cart')).toBeInTheDocument()
+    expect(screen.getByRole('checkbox', { name: 'Pitas' })).toBeChecked()
   })
 
   it('a new trip asks first, then clears the check', async () => {
-    const { app, shopping } = await setup()
-    shopping.mark(shopping.items[0]!, 'have')
-    const wrapper = mountIt(ShoppingView)
-    await button(wrapper, 'New trip').trigger('click')
-    await flushPromises()
-    expect(app.data.shopping.marks).toEqual({ milk: 'have' })
+    const store = await setup()
+    store.shopping.mark(store.shopping.items[0]!, 'have')
+    const { user } = await mountComponent(ShoppingView, store)
+    await user.click(screen.getByRole('button', { name: 'New trip' }))
+    expect(store.app.data.shopping.marks).toEqual({ milk: 'have' })
 
-    const confirm = [...document.querySelectorAll('button')].find((b) =>
-      b.textContent?.includes('Start new trip'),
-    )!
-    confirm.click()
-    await flushPromises()
-    expect(app.data.shopping.marks).toEqual({})
-    expect(app.data.shopping.staples).toHaveLength(3)
-    wrapper.unmount()
+    await user.click(await screen.findByRole('button', { name: 'Start new trip' }))
+    expect(store.app.data.shopping.marks).toEqual({})
+    expect(store.app.data.shopping.staples).toHaveLength(3)
   })
 })

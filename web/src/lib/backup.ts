@@ -1,6 +1,7 @@
 // Backup files and the starter template. Parsing and upgrading stays in the repository
 // (importJson); this module only deals with files and user-facing wording.
 import { format } from 'date-fns'
+import { saveAs } from 'file-saver'
 
 import { exportJson, importJson } from '@/data/repository'
 import { UnsupportedDataError } from '@/data/migrations'
@@ -13,14 +14,7 @@ export function backupFileName(now = new Date()): string {
 
 /** Hands the browser a file to save. */
 export function downloadBackup(data: AppData, now = new Date()): void {
-  const blob = new Blob([exportJson(data)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = backupFileName(now)
-  a.click()
-  // Some mobile browsers start the download after click() returns, so free the URL later.
-  setTimeout(() => URL.revokeObjectURL(url), 10_000)
+  saveAs(new Blob([exportJson(data)], { type: 'application/json' }), backupFileName(now))
 }
 
 /** Reads a backup file chosen by the user. Throws with a message she can understand. */

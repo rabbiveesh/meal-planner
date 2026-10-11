@@ -1,27 +1,14 @@
-import { beforeEach, describe, expect, it } from 'vitest'
-import { createPinia, setActivePinia } from 'pinia'
+import { describe, expect, it } from 'vitest'
 
-import { importJson } from '@/data/repository'
-import starter from '@/data/templates/starter.json'
-import { useDriver } from '@/storage'
-import { useAppStore } from '../app'
+import { setupStore } from '@/test-store'
 import { useShoppingStore } from '../shopping'
 
 async function setup() {
-  useDriver()
-  setActivePinia(createPinia())
-  const app = useAppStore()
-  await app.load()
-  app.replaceAll(importJson(JSON.stringify(starter)))
-  app.regenerate()
+  const { app } = await setupStore({ regenerate: true })
   return { app, shopping: useShoppingStore() }
 }
 
 describe('shopping store', () => {
-  beforeEach(() => {
-    useDriver()
-  })
-
   it('merges master-list staples with what the rotation needs', async () => {
     const { shopping } = await setup()
     expect(shopping.items.some((i) => i.key === 'chicken' && i.meals.length > 0)).toBe(true)

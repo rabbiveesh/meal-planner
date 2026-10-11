@@ -1,99 +1,21 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises, mount } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
-import { RouterView, createMemoryHistory, createRouter } from 'vue-router'
-import { createVuetify } from 'vuetify'
-import * as components from 'vuetify/components'
-import * as directives from 'vuetify/directives'
-import { h } from 'vue'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import { screen, within } from '@testing-library/dom'
+import { flushPromises } from '@vue/test-utils'
 
-import { importJson } from '@/data/repository'
-import starter from '@/data/templates/starter.json'
-import { useDriver } from '@/storage'
-import { useAppStore } from '@/stores/app'
+import { findDialog, mountRoute, setupStore } from '@/test-utils'
 
-// Vuetify overlays (dialogs) position against the visual viewport; jsdom has none.
-// TODO: move to src/test-setup.ts alongside the ResizeObserver stub.
-globalThis.visualViewport ??= Object.assign(new EventTarget(), {
-  width: 1024,
-  height: 768,
-  offsetLeft: 0,
-  offsetTop: 0,
-  pageLeft: 0,
-  pageTop: 0,
-  scale: 1,
-  onresize: null,
-  onscroll: null,
-  onscrollend: null,
-}) as VisualViewport
-
-const Stub = { template: '<div />' }
-
-let mounted: { unmount(): void } | undefined
-function cleanUp() {
-  mounted?.unmount()
-  mounted = undefined
-  document.body.innerHTML = ''
-}
-
-async function mountAt(path: string, options: { empty?: boolean } = {}) {
-  useDriver()
-  const pinia = createPinia()
-  setActivePinia(pinia)
-  const app = useAppStore()
-  await app.load()
-  if (!options.empty) {
-    app.replaceAll(importJson(JSON.stringify(starter)))
-    app.regenerate()
-  }
-  const router = createRouter({
-    history: createMemoryHistory(),
-    routes: [
-      { path: '/plan', name: 'plan', component: () => import('@/views/PlanView.vue') },
-      { path: '/print/:view', name: 'print', component: () => import('@/views/PrintView.vue') },
-      { path: '/meals', name: 'meals', component: Stub },
-      { path: '/setup', name: 'setup', component: Stub },
-    ],
-  })
-  await router.push(path)
-  await router.isReady()
-  const wrapper = mount(
-    { render: () => h(components.VApp, () => h(RouterView)) },
-    {
-      global: { plugins: [pinia, router, createVuetify({ components, directives })] },
-      attachTo: document.body,
-    },
-  )
-  mounted = wrapper
-  await flushPromises()
-  return { app, router, wrapper }
-}
-
-/** Clicks the first element under `root` matching `selector` whose text contains `text`. */
-async function clickText(selector: string, text: string, root: ParentNode = document.body) {
-  const el = [...root.querySelectorAll<HTMLElement>(selector)].find((e) =>
-    e.textContent?.includes(text),
-  )
-  if (!el) throw new Error(`No ${selector} containing "${text}"`)
-  el.click()
-  await settle()
-}
-
-/** Lets router navigation and Vue updates finish. */
-async function settle() {
-  await new Promise((r) => setTimeout(r))
-  await flushPromises()
-}
-
+/**
+ * The card for one day of the plan, found by its title (the cards have no accessible name).
+ * Look it up before opening the swap dialog, which repeats the day's title.
+ */
 function dayCard(label: string): HTMLElement {
-  const card = [...document.querySelectorAll<HTMLElement>('.v-card')].find((c) =>
-    c.querySelector('.v-card-title')?.textContent?.includes(label),
-  )
-  if (!card) throw new Error(`No card for ${label}`)
-  return card
+  return screen.getByText(label).closest<HTMLElement>('.v-card')!
 }
 
-const dialog = () => document.querySelector<HTMLElement>('.v-overlay--active .v-card')!
+/** One meal on a day card; its accessible name is "<slot>: <meal>. Tap to change." */
+function slotRow(card: HTMLElement, slot: string): HTMLElement {
+  return within(card).getByRole('listitem', { name: new RegExp(`^${slot}:`) })
+}
 
 describe('PlanView', () => {
   beforeEach(() => {
@@ -102,152 +24,158 @@ describe('PlanView', () => {
   })
   afterEach(() => {
     vi.useRealTimers()
-    cleanUp()
   })
 
   it('points to Meals and Setup when there are no meals', async () => {
-    const { wrapper } = await mountAt('/plan', { empty: true })
-    expect(wrapper.text()).toContain('No meals yet')
-    expect(wrapper.find('a[href="/meals"]').exists()).toBe(true)
-    expect(wrapper.find('a[href="/setup"]').exists()).toBe(true)
+    await mountRoute('/plan', await setupStore({ starter: false }))
+    expect(screen.getByText('No meals yet')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Add meals' })).toHaveAttribute('href', '/meals')
+    expect(screen.getByRole('link', { name: 'Setup' })).toHaveAttribute('href', '/setup')
   })
 
   it('shows one uncrowded chart at a time, week by week', async () => {
-    const { app, router, wrapper } = await mountAt('/plan')
-    const text = wrapper.text()
-    expect(text).toContain('Sunday A')
-    expect(text).not.toContain('Sunday B')
-    expect(text).toContain('Main meal')
-    expect(text).not.toContain("Kids' take-along")
-    expect(text).toContain(app.meal(app.cell(1, 'main')?.mealId)!.name)
+    const store = await setupStore({ regenerate: true })
+    const { app } = store
+    const { router, user } = await mountRoute('/plan', store)
+    expect(screen.getByText('Sunday A')).toBeInTheDocument()
+    expect(screen.queryByText('Sunday B')).not.toBeInTheDocument()
+    expect(screen.getAllByText('Main meal').length).toBeGreaterThan(0)
+    expect(screen.queryByText("Kids' take-along")).not.toBeInTheDocument()
+    expect(dayCard('Monday A')).toHaveTextContent(app.meal(app.cell(1, 'main')?.mealId)!.name)
     // Friday has no main meal, only Friday lunch.
-    expect(dayCard('Friday A').textContent).not.toContain('Main meal')
-    expect(dayCard('Friday A').textContent).toContain('Friday lunch')
-    expect(dayCard('Monday A').textContent).toContain('Today')
+    expect(within(dayCard('Friday A')).queryByText('Main meal')).not.toBeInTheDocument()
+    expect(within(dayCard('Friday A')).getByText('Friday lunch')).toBeInTheDocument()
+    expect(within(dayCard('Monday A')).getByText('Today')).toBeInTheDocument()
 
-    await clickText('.v-tab', 'Take-along')
+    await user.click(screen.getByRole('tab', { name: 'Take-along' }))
     await vi.waitFor(() => expect(router.currentRoute.value.query.view).toBe('takeAlong'))
-    await settle()
-    expect(wrapper.text()).toContain("Kids' take-along")
-    expect(wrapper.text()).not.toContain('Main meal')
+    expect((await screen.findAllByText("Kids' take-along")).length).toBeGreaterThan(0)
+    expect(screen.queryByText('Main meal')).not.toBeInTheDocument()
 
-    await clickText('.v-btn', 'Week B')
+    await user.click(screen.getByRole('button', { name: 'Week B' }))
     await vi.waitFor(() => expect(router.currentRoute.value.query.week).toBe('B'))
-    await settle()
-    expect(wrapper.text()).toContain('Sunday B')
-    expect(wrapper.text()).not.toContain('Sunday A')
+    expect(await screen.findByText('Sunday B')).toBeInTheDocument()
+    expect(screen.queryByText('Sunday A')).not.toBeInTheDocument()
   })
 
   it('swaps a meal by hand and marks it hand-picked', async () => {
-    const { app, wrapper } = await mountAt('/plan')
+    const store = await setupStore({ regenerate: true })
+    const { app } = store
+    const { user } = await mountRoute('/plan', store)
     const before = app.cell(2, 'main')?.mealId
-    await clickText('.v-list-item', 'Main meal', dayCard('Tuesday A'))
-    expect(dialog().textContent).toContain('Good fits')
+    const tuesday = dayCard('Tuesday A')
+    await user.click(slotRow(tuesday, 'Main meal'))
+    const dialog = await findDialog('Good fits')
 
     const choice = app.household.meals.find(
       (m) => m.slots.includes('main') && m.id !== before && m.kashrut === 'parve',
     )!
-    await clickText('.v-list-item', choice.name, dialog())
+    await user.click(within(dialog).getByText(choice.name))
 
     expect(app.cell(2, 'main')).toMatchObject({ mealId: choice.id, locked: true })
-    const card = dayCard('Tuesday A').textContent
-    expect(card).toContain(choice.name)
-    expect(card).toContain('Hand-picked')
-    expect(wrapper.text()).toContain(choice.name)
+    const card = within(tuesday)
+    expect(card.getByText(choice.name)).toBeInTheDocument()
+    expect(card.getByText('Hand-picked')).toBeInTheDocument()
   })
 
   it('searches the swap list', async () => {
-    await mountAt('/plan')
-    await clickText('.v-list-item', 'Main meal', dayCard('Sunday A'))
-    const input = dialog().querySelector<HTMLInputElement>('input[type="text"]')!
-    input.value = 'mujadara'
-    input.dispatchEvent(new Event('input'))
-    await flushPromises()
-    const items = [...dialog().querySelectorAll('.v-list-item')].map((i) => i.textContent)
+    const { user } = await mountRoute('/plan')
+    await user.click(slotRow(dayCard('Sunday A'), 'Main meal'))
+    const dialog = await findDialog('Good fits')
+    await user.type(within(dialog).getByRole('textbox', { name: 'Search meals' }), 'mujadara')
+    const items = within(dialog)
+      .getAllByRole('listitem')
+      .map((i) => i.textContent)
     expect(items.every((t) => t?.toLowerCase().includes('mujadara'))).toBe(true)
     expect(items.length).toBeGreaterThan(0)
   })
 
   it('turns on a special day, keeping the backup meal visible', async () => {
-    const { app } = await mountAt('/plan?view=takeAlong')
+    const store = await setupStore({ regenerate: true })
+    const { app } = store
+    const { user } = await mountRoute('/plan?view=takeAlong', store)
     const backup = app.meal(app.cell(0, 'lunch')?.mealId)!
-    await clickText('.v-list-item', 'Our lunch', dayCard('Sunday A'))
-    const toggle = [...dialog().querySelectorAll('.v-switch')].find((e) =>
-      e.textContent?.includes('Shabbos leftovers'),
-    )!
-    await clickText('input', '', toggle)
+    const sunday = dayCard('Sunday A')
+    await user.click(slotRow(sunday, 'Our lunch'))
+    const dialog = await findDialog('Shabbos leftovers')
+    await user.click(within(dialog).getByRole('checkbox', { name: 'Shabbos leftovers' }))
     expect(app.cell(0, 'lunch')?.specialActive).toBe(true)
 
-    const struck = dayCard('Sunday A').querySelector('.text-decoration-line-through')
-    expect(struck?.textContent).toContain(backup.name)
-    expect(dayCard('Sunday A').textContent).toContain('Shabbos leftovers')
+    const card = within(sunday)
+    expect(card.getByText(backup.name)).toHaveClass('text-decoration-line-through')
+    expect(card.getByText('Shabbos leftovers')).toBeInTheDocument()
   })
 
   it('shows kashrut problems on the cell they affect', async () => {
-    const { app } = await mountAt('/plan?view=takeAlong')
+    const store = await setupStore({ regenerate: true })
+    const { app } = store
+    await mountRoute('/plan?view=takeAlong', store)
     // Meat at breakfast, dairy at lunch: the adults wait longer than that.
     app.setCell(0, 'ourBreakfast', 'chicken-salad')
     app.setCell(0, 'lunch', 'protein-shake-with-berries')
     await flushPromises()
-    const lunch = [...dayCard('Sunday A').querySelectorAll('.v-list-item')].find((i) =>
-      i.textContent?.includes('Our lunch'),
-    )!
-    expect(lunch.querySelector('.v-alert')?.textContent).toContain('after meat')
+    const [alert] = within(slotRow(dayCard('Sunday A'), 'Our lunch')).getAllByRole('alert')
+    expect(alert).toHaveTextContent('after meat')
   })
 
   it('makes a new plan after confirming, keeping hand-picked meals', async () => {
-    const { app } = await mountAt('/plan')
+    const store = await setupStore({ regenerate: true })
+    const { app } = store
+    const { user } = await mountRoute('/plan', store)
     app.setCell(3, 'main', 'risotto')
     const spy = vi.spyOn(app, 'regenerate')
-    await clickText('.v-btn', 'Make a new plan')
+    await user.click(screen.getByRole('button', { name: 'Make a new plan' }))
     expect(spy).not.toHaveBeenCalled()
-    expect(dialog().textContent).toContain('stay where they are')
-    await clickText('.v-btn', 'Make a new plan', dialog())
+    const dialog = await findDialog('stay where they are')
+    await user.click(within(dialog).getByRole('button', { name: 'Make a new plan' }))
     expect(spy).toHaveBeenCalledOnce()
     expect(app.cell(3, 'main')?.mealId).toBe('risotto')
   })
 
   it('opens the printable chart for the current tab', async () => {
-    const { router } = await mountAt('/plan?view=breakfast')
-    await clickText('.v-btn', 'Print')
+    const { router, user } = await mountRoute('/plan?view=breakfast')
+    await user.click(screen.getByRole('link', { name: 'Print' }))
     await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/print/breakfast'))
   })
 })
 
 describe('PrintView', () => {
-  afterEach(cleanUp)
-
   it('prints one table per week with the view’s slots as columns', async () => {
-    const { app, wrapper } = await mountAt('/print/takeAlong')
-    expect(wrapper.text()).toContain('Take-along · Week A')
-    expect(wrapper.text()).toContain('Take-along · Week B')
-    expect(wrapper.text()).toContain('Rotation started Sunday 11 October 2026')
-    const tables = wrapper.findAll('table')
+    const store = await setupStore({ regenerate: true })
+    const { app } = store
+    await mountRoute('/print/takeAlong', store)
+    expect(screen.getByRole('heading', { name: 'Take-along · Week A' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Take-along · Week B' })).toBeInTheDocument()
+    expect(screen.getAllByText('Rotation started Sunday 11 October 2026')).toHaveLength(2)
+    const tables = screen.getAllByRole('table')
     expect(tables).toHaveLength(2)
-    expect(tables[0]!.findAll('thead th').map((t) => t.text())).toEqual([
-      '',
-      "Kids' take-along",
-      'Our lunch',
-    ])
-    expect(tables[1]!.findAll('tbody tr')).toHaveLength(6)
-    expect(tables[1]!.text()).toContain(app.meal(app.cell(9, 'lunch')?.mealId)!.name)
+    expect(
+      within(tables[0]!)
+        .getAllByRole('columnheader')
+        .map((t) => t.textContent?.trim()),
+    ).toEqual(['', "Kids' take-along", 'Our lunch'])
+    const body = within(tables[1]!).getAllByRole('rowgroup')[1]!
+    expect(within(body).getAllByRole('row')).toHaveLength(6)
+    expect(tables[1]).toHaveTextContent(app.meal(app.cell(9, 'lunch')?.mealId)!.name)
   })
 
   it('prints with the browser and goes back to the plan', async () => {
-    const { router, wrapper } = await mountAt('/print/home')
+    const { router, user } = await mountRoute('/print/home')
     const print = vi.spyOn(window, 'print').mockImplementation(() => {})
-    await clickText('.v-btn', 'Print')
+    const printButton = screen.getByRole('button', { name: 'Print' })
+    await user.click(printButton)
     expect(print).toHaveBeenCalledOnce()
-    expect(wrapper.find('.no-print').exists()).toBe(true)
+    // The buttons themselves stay off the paper.
+    expect(printButton.closest('.no-print')).not.toBeNull()
 
-    await clickText('.v-btn', 'Back')
-    expect(router.currentRoute.value.name).toBe('plan')
+    await user.click(screen.getByRole('button', { name: 'Back' }))
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('plan'))
     expect(router.currentRoute.value.query.view).toBe('home')
   })
 
   it('says so for an unknown chart', async () => {
-    const { wrapper } = await mountAt('/print/lunchbox')
-    expect(wrapper.text()).toContain('There is no chart with that name')
-    expect(wrapper.find('table').exists()).toBe(false)
+    await mountRoute('/print/lunchbox')
+    expect(screen.getByText('There is no chart with that name.')).toBeInTheDocument()
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
   })
 })

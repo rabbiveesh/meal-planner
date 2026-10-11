@@ -29,7 +29,7 @@ const week = computed<0 | 1>({
 })
 
 const hasMeals = computed(() => app.household.meals.length > 0)
-const hasPlan = computed(() => app.plan.cells.some((c) => c.mealId))
+const hasPlan = computed(() => app.planWithAnswers.cells.some((c) => c.mealId))
 const viewSlots = computed(() => slotsFor(app.household.slots, view.value))
 
 const days = computed(() =>

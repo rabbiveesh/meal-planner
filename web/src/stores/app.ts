@@ -58,10 +58,11 @@ export const useAppStore = defineStore('app', () => {
   const answerKey = (day: number, slotId: string) => `${dateOf(day)}|${slotId}`
 
   /**
-   * The plan as the rest of the app sees it: the stored rotation, with this cycle's dated
-   * special-day answers applied as `specialActive`.
+   * The stored rotation (`data.plan`) with the planning window's dated special-day answers
+   * applied as `specialActive`. Read-only: edits go through the actions below, never back
+   * into `data.plan` from here.
    */
-  const plan = computed<Plan>(() => {
+  const planWithAnswers = computed<Plan>(() => {
     const answers = data.value.specialAnswers
     const cells: Cell[] = data.value.plan.cells.map((c) => ({
       ...c,
@@ -107,8 +108,9 @@ export const useAppStore = defineStore('app', () => {
 
   // --- Plan -------------------------------------------------------------
 
+  /** A cell as planned this cycle, i.e. from `planWithAnswers`. */
   function cell(day: number, slotId: string): Cell | undefined {
-    return plan.value.cells.find((c) => c.day === day && c.slotId === slotId)
+    return planWithAnswers.value.cells.find((c) => c.day === day && c.slotId === slotId)
   }
 
   function storedCell(day: number, slotId: string): Cell | undefined {
@@ -199,13 +201,15 @@ export const useAppStore = defineStore('app', () => {
   // --- Core queries -------------------------------------------------------
 
   const mealOptions = (day: number, slotId: string) =>
-    core.mealOptions(plain(household.value), plain(plan.value), day, slotId).options
+    core.mealOptions(plain(household.value), plain(planWithAnswers.value), day, slotId).options
   const checkDay = (day: number) =>
-    core.checkDay(plain(household.value), plain(plan.value), day).conflicts
-  const prepFor = (day: number) => core.prepFor(plain(household.value), plain(plan.value), day)
-  const shoppingNeeds = () => core.shoppingNeeds(plain(household.value), plain(plan.value)).items
+    core.checkDay(plain(household.value), plain(planWithAnswers.value), day).conflicts
+  const prepFor = (day: number) =>
+    core.prepFor(plain(household.value), plain(planWithAnswers.value), day)
+  const shoppingNeeds = () =>
+    core.shoppingNeeds(plain(household.value), plain(planWithAnswers.value)).items
   const rescue = (query: core.RescueQuery) =>
-    core.rescue(plain(household.value), plain(plan.value), query)
+    core.rescue(plain(household.value), plain(planWithAnswers.value), query)
 
   return {
     data,
@@ -213,7 +217,7 @@ export const useAppStore = defineStore('app', () => {
     firstRun,
     loadError,
     household,
-    plan,
+    planWithAnswers,
     today,
     dateOf,
     load,
