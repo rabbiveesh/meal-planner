@@ -1,6 +1,8 @@
 // Pure helpers for the shopping screens: merging the master list with what the
 // rotation needs, grouping, formatting amounts, and parsing a pasted master list.
 // Quantities themselves are computed by the Rust core (`shoppingNeeds`).
+import { groupBy } from 'es-toolkit'
+
 import type { NeedItem } from '@/core'
 import type { PantryMark, StapleItem } from '@/data/schema'
 
@@ -122,13 +124,11 @@ function addAmount(amounts: Amount[], n: NeedItem) {
 
 /** Groups items by category, categories in order of first appearance. */
 export function groupByCategory<T extends { category: string }>(items: T[]): CategoryGroup<T>[] {
-  const groups = new Map<string, T[]>()
-  for (const item of items) {
-    const list = groups.get(item.category)
-    if (list) list.push(item)
-    else groups.set(item.category, [item])
-  }
-  return [...groups].map(([category, list]) => ({ category, items: list }))
+  // groupBy keeps first-seen key order, so categories follow her list's order.
+  return Object.entries(groupBy(items, (i) => i.category)).map(([category, list]) => ({
+    category,
+    items: list,
+  }))
 }
 
 const quantityFormat = new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 })

@@ -1,3 +1,5 @@
+import { omit } from 'es-toolkit'
+
 import { SCHEMA_VERSION, type AppData } from './schema'
 
 /** One step per version: migrations[n] upgrades data from version n to n + 1. */
@@ -7,7 +9,7 @@ const migrations: Record<number, (data: Record<string, unknown>) => Record<strin
     const plan = data.plan as { cells: Array<Record<string, unknown>> }
     return {
       ...data,
-      plan: { ...plan, cells: plan.cells.map(({ specialActive: _, ...cell }) => cell) },
+      plan: { ...plan, cells: plan.cells.map((cell) => omit(cell, ['specialActive'])) },
       specialAnswers: {},
     }
   },

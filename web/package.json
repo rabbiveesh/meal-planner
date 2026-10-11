@@ -19,6 +19,7 @@
     "@mdi/font": "^7.4.47",
     "@vueuse/core": "^15.0.0",
     "date-fns": "^4.4.0",
+    "es-toolkit": "^1.52.0",
     "meal-core": "file:../core/pkg",
     "pinia": "^4.0.3",
     "unstorage": "^1.17.5",
@@ -27,6 +28,9 @@
     "vuetify": "^4.2.4"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/user-event": "^14.6.7",
     "@tsconfig/node24": "^24.0.5",
     "@types/jsdom": "^30.0.0",
     "@types/node": "^24.13.4",

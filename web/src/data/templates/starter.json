@@ -70,14 +70,6 @@
         "prepNightBefore": true
       },
       {
-        "id": "fridayLunch",
-        "name": "Friday lunch",
-        "view": "home",
-        "childTime": "12:30",
-        "days": [5],
-        "minRepeatDays": 14
-      },
-      {
         "id": "main",
         "name": "Main meal",
         "view": "home",
@@ -93,6 +85,14 @@
         "childTime": "18:00",
         "days": [0, 1, 2, 3, 4],
         "minRepeatDays": 7
+      },
+      {
+        "id": "fridayLunch",
+        "name": "Friday lunch",
+        "view": "home",
+        "childTime": "12:30",
+        "days": [5],
+        "minRepeatDays": 14
       }
     ],
     "meals": [

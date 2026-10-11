@@ -38,6 +38,12 @@ When you confidently assume you're right, you kill kittens. Assume you're wrong 
 - Prefer configuration and data over hard-coded behaviour.
 - Don't embed things in the wrong place. Planner rules live in the Rust core, never in Vue components. Persistence goes only through the storage module. Household-specific facts are user data, never code. Putting something where it's convenient instead of where it belongs is a shortcut, and shortcuts kill kittens.
 
+## Abstractions follow the data, and compose cleanly
+
+Abstractions that aren't about the data make programming harder, not easier, and they kill kittens. So do things that don't compose cleanly. Name and shape modules after the domain data (meals, slots, cells, answers), not after generic machinery. Prefer small pure functions that take data and return data, and combine them, over frameworks, managers, wrappers or class hierarchies. If a piece can't be reused without dragging its surroundings along, it's shaped wrong.
+
+Interfaces must not lie. A name, type or function must do exactly what it claims, no more and no less. Jumping through interfaces that pretend to be something they aren't is the worst kitten killer of all.
+
 ## Kitten death toll
 
 Finish every piece of work (each PR, each reply that reports finished work) with a **kitten death toll**: an honest count of the shortcuts taken and wheels reinvented, with each one named, why it happened, and what would fix it. Zero is the goal. Never round down.
