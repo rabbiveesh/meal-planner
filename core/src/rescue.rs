@@ -19,7 +19,7 @@ pub struct RescueAnswer {
 pub struct RescueQuery {
     pub day: u8,
     pub slot_id: String,
-    /// Meat, dairy or parve if she picked one; None means either.
+    /// Meat or dairy if she picked one (parve meals always fit); None means either.
     #[serde(default)]
     #[tsify(optional)]
     pub kashrut: Option<Kashrut>,
@@ -51,7 +51,11 @@ pub fn rescue(h: &Household, plan: &Plan, q: &RescueQuery) -> RescueResult {
         .meals
         .iter()
         .filter(|m| m.rescue && m.slots.contains(&q.slot_id))
-        .filter(|m| q.kashrut.is_none_or(|k| m.kashrut == k))
+        // Parve fits a meat or a dairy meal alike.
+        .filter(|m| {
+            q.kashrut
+                .is_none_or(|k| m.kashrut == k || m.kashrut == Kashrut::Parve)
+        })
         .filter(|m| {
             m.rescue_questions
                 .iter()
@@ -164,5 +168,15 @@ mod tests {
         let r = rescue(&h, &Plan::default(), &query(&[], Some(Kashrut::Parve)));
         assert_eq!(r.options.len(), 1);
         assert_eq!(r.options[0].name, "Fries");
+    }
+
+    #[test]
+    fn parve_meals_fit_a_meat_or_dairy_choice() {
+        let h = household();
+        let r = rescue(&h, &Plan::default(), &query(&[], Some(Kashrut::Dairy)));
+        let names: Vec<_> = r.options.iter().map(|o| o.name.as_str()).collect();
+        assert_eq!(names, vec!["Fries"]);
+        let r = rescue(&h, &Plan::default(), &query(&[], Some(Kashrut::Meat)));
+        assert_eq!(r.options.len(), 2);
     }
 }

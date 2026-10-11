@@ -8,4 +8,7 @@
   .v-main {
     padding: 0 !important;
   }
+  .v-container {
+    max-width: none !important;
+  }
 }

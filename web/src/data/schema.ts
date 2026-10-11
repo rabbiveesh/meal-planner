@@ -1,7 +1,7 @@
 import type { Household, Plan } from '@/core'
 
 /** Bump this and add a step in migrations.ts whenever the stored shape changes. */
-export const SCHEMA_VERSION = 1
+export const SCHEMA_VERSION = 2
 
 /** An item on the user's own store master list (e.g. her Osher Ad list). */
 export interface StapleItem {
@@ -28,4 +28,10 @@ export interface AppData {
   /** yyyy-MM-dd of the Sunday that starts week A of the rotation. */
   rotationStart: string
   shopping: ShoppingState
+  /**
+   * Answers to the weekly special-day questions ("Any Shabbos leftovers?"), keyed by
+   * `yyyy-MM-dd|slotId`. Kept by calendar date, not rotation day, so an answer applies to
+   * that one date only. Missing means not asked yet.
+   */
+  specialAnswers: Record<string, boolean>
 }

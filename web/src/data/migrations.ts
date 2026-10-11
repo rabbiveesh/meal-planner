@@ -1,7 +1,17 @@
 import { SCHEMA_VERSION, type AppData } from './schema'
 
 /** One step per version: migrations[n] upgrades data from version n to n + 1. */
-const migrations: Record<number, (data: Record<string, unknown>) => Record<string, unknown>> = {}
+const migrations: Record<number, (data: Record<string, unknown>) => Record<string, unknown>> = {
+  // v2: special-day answers moved from plan cells (per rotation day) to dated answers.
+  1: (data) => {
+    const plan = data.plan as { cells: Array<Record<string, unknown>> }
+    return {
+      ...data,
+      plan: { ...plan, cells: plan.cells.map(({ specialActive: _, ...cell }) => cell) },
+      specialAnswers: {},
+    }
+  },
+}
 
 export class UnsupportedDataError extends Error {}
 

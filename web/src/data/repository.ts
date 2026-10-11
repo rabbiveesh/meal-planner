@@ -1,5 +1,6 @@
 import { format, startOfWeek } from 'date-fns'
 
+import { validate } from '@/core'
 import { getStorage } from '@/storage'
 import { migrate } from './migrations'
 import { SCHEMA_VERSION, type AppData } from './schema'
@@ -18,6 +19,7 @@ export function emptyData(today = new Date()): AppData {
     plan: { cells: [] },
     rotationStart: format(startOfWeek(today, { weekStartsOn: 0 }), 'yyyy-MM-dd'),
     shopping: { staples: [], marks: {}, bought: [] },
+    specialAnswers: {},
   }
 }
 
@@ -37,5 +39,8 @@ export function exportJson(data: AppData): string {
 
 /** Parses a backup file, upgrading it if it came from an older version. */
 export function importJson(text: string): AppData {
-  return migrate(JSON.parse(text))
+  const data = migrate(JSON.parse(text))
+  // The Rust core owns the shape of households and plans; let it check them.
+  validate(data.household, data.plan)
+  return data
 }

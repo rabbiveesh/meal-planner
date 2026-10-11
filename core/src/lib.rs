@@ -94,3 +94,15 @@ pub fn rescue(
     let result = rescue::rescue(&household.to_rust()?, &plan.to_rust()?, &query.to_rust()?);
     Ok(result.into_ts()?)
 }
+
+/// Checks that data (e.g. a restored backup) has the shape the core expects.
+/// Throws a descriptive error naming the first field that doesn't fit.
+#[wasm_bindgen]
+pub fn validate(household: Ts<Household>, plan: Ts<Plan>) -> Result<(), JsError> {
+    household
+        .to_rust()
+        .map_err(|e| JsError::new(&format!("Household: {e}")))?;
+    plan.to_rust()
+        .map_err(|e| JsError::new(&format!("Plan: {e}")))?;
+    Ok(())
+}

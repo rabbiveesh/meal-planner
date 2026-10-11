@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "household": {
     "eaters": [
       {
@@ -429,5 +429,6 @@
     "staples": [],
     "marks": {},
     "bought": []
-  }
+  },
+  "specialAnswers": {}
 }

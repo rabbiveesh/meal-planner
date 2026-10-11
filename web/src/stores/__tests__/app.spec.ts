@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 
 import { useDriver, getStorage } from '@/storage'
@@ -45,5 +45,50 @@ describe('app store', () => {
     app.replaceAll(importJson(JSON.stringify(starter)))
     await new Promise((r) => setTimeout(r, 400))
     expect(await getStorage().hasItem('app-data')).toBe(true)
+  })
+})
+
+describe('special-day answers', () => {
+  beforeEach(() => {
+    useDriver()
+    setActivePinia(createPinia())
+  })
+
+  it('are kept per calendar date, and start unanswered', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 9, 12, 9)) // Monday, week A
+    try {
+      const app = useAppStore()
+      await app.load()
+      app.replaceAll(importJson(JSON.stringify(starter)))
+      app.setRotationStart('2026-10-11')
+      app.regenerate()
+      expect(app.specialAnswer(1, 'lunch')).toBeUndefined()
+
+      app.setSpecialActive(1, 'lunch', true)
+      expect(app.dateOf(1)).toBe('2026-10-12')
+      expect(app.cell(1, 'lunch')?.specialActive).toBe(true)
+      // The stored rotation itself is untouched, so it doesn't carry over to the next cycle.
+      expect(
+        app.data.plan.cells.find((c) => c.day === 1 && c.slotId === 'lunch')?.specialActive,
+      ).toBeFalsy()
+      expect(app.data.specialAnswers).toEqual({ '2026-10-12|lunch': true })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('on Shabbos, cover the coming week', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 9, 24, 12)) // Shabbos B
+    try {
+      const app = useAppStore()
+      await app.load()
+      app.replaceAll(importJson(JSON.stringify(starter)))
+      app.setRotationStart('2026-10-11')
+      expect(app.dateOf(0)).toBe('2026-10-25') // the next Sunday, week A again
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })
