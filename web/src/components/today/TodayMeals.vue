@@ -1,10 +1,13 @@
 <script setup lang="ts">
+// One day's meals, a big row per slot. Tapping a row asks the parent to change that meal.
 import { computed } from 'vue'
 
 import { slotsOn } from '@/lib/today'
 import { useAppStore } from '@/stores/app'
 
 const props = defineProps<{ day: number }>()
+
+const emit = defineEmits<{ pick: [slotId: string] }>()
 
 const app = useAppStore()
 
@@ -19,13 +22,17 @@ const rows = computed(() =>
 
 <template>
   <v-card v-if="rows.length === 0" class="mb-4" variant="tonal">
-    <v-card-text class="text-body-1">Nothing is planned today. Enjoy!</v-card-text>
+    <v-card-text class="text-body-1">Nothing is planned for this day. Enjoy!</v-card-text>
   </v-card>
   <v-card v-else class="mb-4">
     <v-list lines="three" class="py-0">
       <template v-for="(row, i) in rows" :key="row.slot.id">
         <v-divider v-if="i > 0" />
-        <v-list-item class="py-3">
+        <v-list-item
+          class="py-3"
+          :aria-label="`${row.slot.name}: ${row.special?.label ?? row.meal?.name ?? 'Not planned yet'}. Tap to change.`"
+          @click="emit('pick', row.slot.id)"
+        >
           <v-list-item-subtitle class="text-body-2 mb-1">{{ row.slot.name }}</v-list-item-subtitle>
           <v-list-item-title class="text-h6 text-wrap">
             <template v-if="row.special">{{ row.special.label }}</template>
@@ -41,6 +48,9 @@ const rows = computed(() =>
             <v-chip v-if="row.cell?.leftover" class="mt-2" size="small" color="secondary">
               Leftovers
             </v-chip>
+          </template>
+          <template #append>
+            <v-icon icon="mdi-chevron-right" />
           </template>
         </v-list-item>
       </template>
