@@ -23,9 +23,20 @@ describe('v1 to v2', () => {
       plan: { cells: [{ day: 0, slotId: 'lunch', specialActive: true }] },
     }
     delete (v1 as Partial<typeof v1>).specialAnswers
-    const v2 = migrate(v1)
-    expect(v2.version).toBe(2)
-    expect(v2.specialAnswers).toEqual({})
-    expect(v2.plan.cells[0]).toEqual({ day: 0, slotId: 'lunch' })
+    delete (v1 as Partial<typeof v1>).notes
+    const migrated = migrate(v1)
+    expect(migrated.version).toBe(SCHEMA_VERSION)
+    expect(migrated.specialAnswers).toEqual({})
+    expect(migrated.plan.cells[0]).toEqual({ day: 0, slotId: 'lunch' })
+  })
+})
+
+describe('v2 to v3', () => {
+  it('starts with no notes', () => {
+    const v2 = { ...emptyData(), version: 2 }
+    delete (v2 as Partial<typeof v2>).notes
+    const v3 = migrate(v2)
+    expect(v3.version).toBe(3)
+    expect(v3.notes).toEqual({})
   })
 })

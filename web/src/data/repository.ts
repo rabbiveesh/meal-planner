@@ -20,6 +20,7 @@ export function emptyData(today = new Date()): AppData {
     rotationStart: format(startOfWeek(today, { weekStartsOn: 0 }), 'yyyy-MM-dd'),
     shopping: { staples: [], marks: {}, bought: [] },
     specialAnswers: {},
+    notes: {},
   }
 }
 
