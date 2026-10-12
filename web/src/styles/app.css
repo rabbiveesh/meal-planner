@@ -1,0 +1,14 @@
+/* Print: hide app chrome so the fridge chart is just the chart. */
+@media print {
+  .no-print,
+  .v-app-bar,
+  .v-bottom-navigation {
+    display: none !important;
+  }
+  .v-main {
+    padding: 0 !important;
+  }
+  .v-container {
+    max-width: none !important;
+  }
+}
