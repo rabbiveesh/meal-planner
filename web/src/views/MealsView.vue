@@ -148,6 +148,7 @@ function remove(id: string) {
       color="secondary"
       size="large"
       app
+      layout
       location="bottom end"
       data-test="add"
       @click="add"
