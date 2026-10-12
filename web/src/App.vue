@@ -31,7 +31,10 @@ const tabs = [
       <div v-else class="d-flex justify-center pa-8"><v-progress-circular indeterminate /></div>
     </v-main>
 
-    <v-bottom-navigation grow>
+    <!-- Vuetify stacks `app` layout items in tree order, and views render inside
+         v-main, above this in the tree. order="-1" makes the nav the outermost
+         bottom item, so a view's `app` FAB or bar sits above it, not on it. -->
+    <v-bottom-navigation grow order="-1" tag="nav" aria-label="Sections">
       <v-btn v-for="t in tabs" :key="t.to" :to="t.to" exact>
         <v-icon :icon="t.icon" />
         <span>{{ t.label }}</span>
