@@ -154,6 +154,30 @@ describe('TodayView', () => {
     ).toBeInTheDocument()
   })
 
+  it('keeps her own notes under each meal, for that day only', async () => {
+    const store = await setupStore({ regenerate: true })
+    const { user } = await mountRoute({ path: '/', query: { date: '2026-10-13' } }, store)
+
+    await user.type(
+      screen.getByRole('textbox', { name: 'Notes for Main meal' }),
+      'plus vegetable soup for us',
+    )
+    expect(store.app.note('2026-10-13', 'main')).toBe('plus vegetable soup for us')
+
+    await user.click(screen.getByRole('button', { name: 'Next day' }))
+    await vi.waitFor(() =>
+      expect(screen.getByRole('heading', { name: 'Wednesday, 14 October' })).toBeInTheDocument(),
+    )
+    expect(screen.getByRole('textbox', { name: 'Notes for Main meal' })).toHaveValue('')
+
+    await user.click(screen.getByRole('button', { name: 'Previous day' }))
+    await vi.waitFor(() =>
+      expect(screen.getByRole('textbox', { name: 'Notes for Main meal' })).toHaveValue(
+        'plus vegetable soup for us',
+      ),
+    )
+  })
+
   it('shows a message passed in navigation state, once', async () => {
     const { router } = await mountRoute({
       path: '/',

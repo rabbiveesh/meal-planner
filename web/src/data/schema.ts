@@ -1,7 +1,7 @@
 import type { Household, Plan } from '@/core'
 
 /** Bump this and add a step in migrations.ts whenever the stored shape changes. */
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 
 /** An item on the user's own store master list (e.g. her Osher Ad list). */
 export interface StapleItem {
@@ -34,4 +34,9 @@ export interface AppData {
    * that one date only. Missing means not asked yet.
    */
   specialAnswers: Record<string, boolean>
+  /**
+   * Her own notes on a meal ("plus vegetable soup for us"), keyed by `yyyy-MM-dd|slotId`.
+   * Kept by calendar date, like special-day answers, so a note is about that one day.
+   */
+  notes: Record<string, string>
 }

@@ -95,7 +95,7 @@ if (snackbar.value) {
       Rescue me
     </v-btn>
 
-    <TodayMeals :day="day" @pick="openSwap" />
+    <TodayMeals :day="day" :date="dateParam(date)" @pick="openSwap" />
     <template v-if="isToday">
       <WeekQuestions :today="app.today" />
       <PrepChecklist :day="tomorrow" :list-key="tomorrowKey" />

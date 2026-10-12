@@ -1,11 +1,16 @@
 <script setup lang="ts">
-// One day's meals, a big row per slot. Tapping a row asks the parent to change that meal.
+// One day's meals, a big row per slot. Tapping a row asks the parent to change that meal;
+// under each row is her own note for that meal on that date.
 import { computed } from 'vue'
 
 import { slotsOn } from '@/lib/today'
 import { useAppStore } from '@/stores/app'
 
-const props = defineProps<{ day: number }>()
+const props = defineProps<{
+  day: number
+  /** The calendar date shown (yyyy-MM-dd), which her notes belong to. */
+  date: string
+}>()
 
 const emit = defineEmits<{ pick: [slotId: string] }>()
 
@@ -53,6 +58,20 @@ const rows = computed(() =>
             <v-icon icon="mdi-chevron-right" />
           </template>
         </v-list-item>
+        <div class="px-4 pb-3">
+          <v-textarea
+            :model-value="app.note(date, row.slot.id)"
+            :aria-label="`Notes for ${row.slot.name}`"
+            placeholder="Notes"
+            prepend-inner-icon="mdi-pencil"
+            variant="plain"
+            density="compact"
+            rows="1"
+            auto-grow
+            hide-details
+            @update:model-value="app.setNote(date, row.slot.id, $event)"
+          />
+        </div>
       </template>
     </v-list>
   </v-card>

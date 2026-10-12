@@ -33,6 +33,21 @@ describe('app store', () => {
   })
 })
 
+describe('notes', () => {
+  it('are kept per calendar date and slot; a blank note is removed', async () => {
+    const { app } = await setupStore()
+    expect(app.note('2026-10-13', 'main')).toBe('')
+
+    app.setNote('2026-10-13', 'main', 'plus vegetable soup for us')
+    expect(app.note('2026-10-13', 'main')).toBe('plus vegetable soup for us')
+    expect(app.note('2026-10-27', 'main')).toBe('')
+    expect(app.data.notes).toEqual({ '2026-10-13|main': 'plus vegetable soup for us' })
+
+    app.setNote('2026-10-13', 'main', '  ')
+    expect(app.data.notes).toEqual({})
+  })
+})
+
 describe('special-day answers', () => {
   it('are kept per calendar date, and start unanswered', async () => {
     vi.useFakeTimers({ toFake: ['Date'] })

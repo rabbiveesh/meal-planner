@@ -13,6 +13,8 @@ const migrations: Record<number, (data: Record<string, unknown>) => Record<strin
       specialAnswers: {},
     }
   },
+  // v3: her own notes on each day's meals.
+  2: (data) => ({ ...data, notes: {} }),
 }
 
 export class UnsupportedDataError extends Error {}

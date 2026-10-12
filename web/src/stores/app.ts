@@ -160,6 +160,21 @@ export const useAppStore = defineStore('app', () => {
     answers[answerKey(day, slotId)] = active
   }
 
+  // --- Notes ------------------------------------------------------------
+
+  const noteKey = (date: string, slotId: string) => `${date}|${slotId}`
+
+  /** Her note on a slot's meal on `date` (yyyy-MM-dd), or '' if none. */
+  function note(date: string, slotId: string): string {
+    return data.value.notes[noteKey(date, slotId)] ?? ''
+  }
+
+  /** Saves her note on a slot's meal on `date`; a blank note is removed. */
+  function setNote(date: string, slotId: string, text: string) {
+    if (text.trim()) data.value.notes[noteKey(date, slotId)] = text
+    else delete data.value.notes[noteKey(date, slotId)]
+  }
+
   // --- Household ----------------------------------------------------------
 
   function meal(id: string | undefined | null): Meal | undefined {
@@ -229,6 +244,8 @@ export const useAppStore = defineStore('app', () => {
     special,
     specialAnswer,
     setSpecialActive,
+    note,
+    setNote,
     meal,
     saveMeal,
     deleteMeal,
