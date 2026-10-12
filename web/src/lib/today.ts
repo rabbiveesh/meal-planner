@@ -1,6 +1,6 @@
 // UI helpers for the Today and Rescue screens: which slots and questions to show, and the
 // remembered ticks on tonight's prep checklist. Planner rules stay in the Rust core.
-import { isValid, parse } from 'date-fns'
+import { format, isValid, parse, startOfDay } from 'date-fns'
 
 import type { Household, SlotDef, SpecialDay } from '@/core'
 import { getStorage } from '@/storage'
@@ -11,6 +11,19 @@ const SHABBOS = 6
 /** The rotation day after `day`. */
 export function nextDay(day: number): number {
   return (day + 1) % CYCLE_DAYS
+}
+
+/** How a shown date is written in the address, e.g. `2026-10-13`. */
+const DATE_PARAM = 'yyyy-MM-dd'
+
+/** The date named by `param` (as written by `dateParam`), or `today` when it names none. */
+export function shownDate(param: unknown, today: Date): Date {
+  const date = typeof param === 'string' ? parse(param, DATE_PARAM, today) : undefined
+  return date && isValid(date) ? date : startOfDay(today)
+}
+
+export function dateParam(date: Date): string {
+  return format(date, DATE_PARAM)
 }
 
 /** Slots planned on rotation day `day`, in the household's order. */

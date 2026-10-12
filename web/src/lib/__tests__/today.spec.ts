@@ -5,9 +5,11 @@ import { importJson } from '@/data/repository'
 import starter from '@/data/templates/starter.json'
 import { useDriver } from '@/storage'
 import {
+  dateParam,
   loadPrepChecks,
   nextDay,
   savePrepChecks,
+  shownDate,
   slotsOn,
   specialsThisWeek,
   upcomingSlot,
@@ -25,6 +27,15 @@ const slot = (id: string, childTime?: string, adultTime?: string): SlotDef => ({
 })
 
 describe('today helpers', () => {
+  it('reads the shown date from the address, falling back to today', () => {
+    const today = new Date(2026, 9, 12, 9, 30)
+    expect(shownDate('2026-10-21', today)).toEqual(new Date(2026, 9, 21))
+    expect(dateParam(shownDate('2026-10-21', today))).toBe('2026-10-21')
+    for (const bad of [undefined, '', 'tomorrow', '2026-13-45', ['2026-10-21']]) {
+      expect(shownDate(bad, today)).toEqual(new Date(2026, 9, 12))
+    }
+  })
+
   it('wraps to the start of the rotation after the last day', () => {
     expect(nextDay(3)).toBe(4)
     expect(nextDay(13)).toBe(0)

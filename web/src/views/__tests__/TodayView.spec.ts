@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { screen, within } from '@testing-library/dom'
+import { fireEvent, screen, within } from '@testing-library/dom'
 
 import { getStorage } from '@/storage'
 import { mountRoute, setupStore } from '@/test-utils'
@@ -83,6 +83,75 @@ describe('TodayView', () => {
     vi.setSystemTime(new Date(2026, 9, 16, 21, 0))
     await mountRoute('/')
     expect(screen.getByText('Nothing to prep tonight.')).toBeInTheDocument()
+  })
+
+  it('turns to the next and previous day with the arrows', async () => {
+    const store = await setupStore({ regenerate: true })
+    const { app } = store
+    const { user, router } = await mountRoute('/', store)
+
+    await user.click(screen.getByRole('button', { name: 'Next day' }))
+    await vi.waitFor(() => expect(router.currentRoute.value.query.date).toBe('2026-10-13'))
+    expect(screen.getByRole('heading', { name: 'Tuesday, 13 October' })).toBeInTheDocument()
+    expect(screen.getByText('Tuesday A')).toBeInTheDocument()
+    const main = app.meal(app.cell(2, 'main')?.mealId)!
+    expect(
+      screen.getByRole('listitem', { name: `Main meal: ${main.name}. Tap to change.` }),
+    ).toBeInTheDocument()
+    // Today's extras stay on today.
+    expect(screen.queryByRole('link', { name: 'Rescue me' })).not.toBeInTheDocument()
+    expect(screen.queryByText("Tonight's prep for tomorrow")).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Previous day' }))
+    await user.click(screen.getByRole('button', { name: 'Previous day' }))
+    await vi.waitFor(() => expect(router.currentRoute.value.query.date).toBe('2026-10-11'))
+    expect(screen.getByRole('heading', { name: 'Sunday, 11 October' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Back to today' }))
+    await vi.waitFor(() => expect(router.currentRoute.value.query.date).toBeUndefined())
+    expect(screen.getByRole('heading', { name: 'Monday, 12 October' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Rescue me' })).toBeInTheDocument()
+  })
+
+  it('turns the page with a swipe: left goes forward, right goes back', async () => {
+    const { router } = await mountRoute('/')
+    const page = screen.getByRole('heading', { name: 'Monday, 12 October' }).closest('.today')!
+    const swipe = (from: number, to: number) => {
+      fireEvent.touchStart(page, { changedTouches: [{ clientX: from, clientY: 100 }] })
+      fireEvent.touchEnd(page, { changedTouches: [{ clientX: to, clientY: 105 }] })
+    }
+
+    swipe(300, 100)
+    await vi.waitFor(() => expect(router.currentRoute.value.query.date).toBe('2026-10-13'))
+    swipe(300, 100)
+    await vi.waitFor(() => expect(router.currentRoute.value.query.date).toBe('2026-10-14'))
+    swipe(100, 300)
+    await vi.waitFor(() => expect(router.currentRoute.value.query.date).toBe('2026-10-13'))
+  })
+
+  it('opens on the date in the address', async () => {
+    await mountRoute({ path: '/', query: { date: '2026-10-21' } })
+    expect(screen.getByRole('heading', { name: 'Wednesday, 21 October' })).toBeInTheDocument()
+    expect(screen.getByText('Wednesday B')).toBeInTheDocument()
+  })
+
+  it("changes another day's meal by tapping it", async () => {
+    const store = await setupStore({ regenerate: true })
+    const { app } = store
+    const { user } = await mountRoute({ path: '/', query: { date: '2026-10-13' } }, store)
+    const before = app.cell(2, 'main')?.mealId
+    await user.click(screen.getByRole('listitem', { name: /^Main meal: / }))
+    const dialog = await screen.findByRole('dialog', { name: 'Main meal Tuesday A' })
+
+    const choice = app.household.meals.find(
+      (m) => m.slots.includes('main') && m.id !== before && m.kashrut === 'parve',
+    )!
+    await user.click(within(dialog).getByText(choice.name))
+
+    expect(app.cell(2, 'main')).toMatchObject({ mealId: choice.id, locked: true })
+    expect(
+      screen.getByRole('listitem', { name: `Main meal: ${choice.name}. Tap to change.` }),
+    ).toBeInTheDocument()
   })
 
   it('shows a message passed in navigation state, once', async () => {
