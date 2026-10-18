@@ -213,6 +213,11 @@ export const useAppStore = defineStore('app', () => {
     data.value.rotationStart = sunday
   }
 
+  /** Sets the name the welcome greets her by. */
+  function setUserName(name: string) {
+    data.value.userName = name
+  }
+
   // --- Core queries -------------------------------------------------------
 
   const mealOptions = (day: number, slotId: string) =>
@@ -253,6 +258,7 @@ export const useAppStore = defineStore('app', () => {
     removeSlot,
     removeEater,
     setRotationStart,
+    setUserName,
     mealOptions,
     checkDay,
     prepFor,

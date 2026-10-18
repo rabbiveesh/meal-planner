@@ -13,6 +13,12 @@ async function setup() {
 }
 
 describe('SetupView', () => {
+  it('keeps the name the welcome greets her by', async () => {
+    const { app, user } = await setup()
+    await user.type(screen.getByRole('textbox', { name: 'Your name' }), 'Masha Cohen')
+    expect(app.data.userName).toBe('Masha Cohen')
+  })
+
   it('adds a person', async () => {
     const { app, user } = await setup()
     await user.click(screen.getByRole('button', { name: 'Add person' }))

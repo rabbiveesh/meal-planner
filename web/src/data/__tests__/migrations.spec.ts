@@ -24,6 +24,7 @@ describe('v1 to v2', () => {
     }
     delete (v1 as Partial<typeof v1>).specialAnswers
     delete (v1 as Partial<typeof v1>).notes
+    delete (v1 as Partial<typeof v1>).userName
     const migrated = migrate(v1)
     expect(migrated.version).toBe(SCHEMA_VERSION)
     expect(migrated.specialAnswers).toEqual({})
@@ -35,8 +36,17 @@ describe('v2 to v3', () => {
   it('starts with no notes', () => {
     const v2 = { ...emptyData(), version: 2 }
     delete (v2 as Partial<typeof v2>).notes
-    const v3 = migrate(v2)
-    expect(v3.version).toBe(3)
-    expect(v3.notes).toEqual({})
+    delete (v2 as Partial<typeof v2>).userName
+    expect(migrate(v2).notes).toEqual({})
+  })
+})
+
+describe('v3 to v4', () => {
+  it('starts with no name to greet her by', () => {
+    const v3 = { ...emptyData(), version: 3 }
+    delete (v3 as Partial<typeof v3>).userName
+    const v4 = migrate(v3)
+    expect(v4.version).toBe(4)
+    expect(v4.userName).toBe('')
   })
 })
