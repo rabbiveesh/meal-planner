@@ -213,6 +213,11 @@ export const useAppStore = defineStore('app', () => {
     data.value.rotationStart = sunday
   }
 
+  /** Sets the name the welcome greets her by. */
+  function setUserName(name: string) {
+    data.value.userName = name
+  }
+
   /** Sets the time of day (HH:mm) from which Today opens on tomorrow. */
   function setTomorrowFrom(time: string) {
     data.value.tomorrowFrom = time
@@ -258,6 +263,7 @@ export const useAppStore = defineStore('app', () => {
     removeSlot,
     removeEater,
     setRotationStart,
+    setUserName,
     setTomorrowFrom,
     mealOptions,
     checkDay,

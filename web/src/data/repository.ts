@@ -21,6 +21,7 @@ export function emptyData(today = new Date()): AppData {
     shopping: { staples: [], marks: {}, bought: [] },
     specialAnswers: {},
     notes: {},
+    userName: '',
     tomorrowFrom: DEFAULT_TOMORROW_FROM,
   }
 }
