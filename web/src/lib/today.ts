@@ -1,6 +1,6 @@
 // UI helpers for the Today and Rescue screens: which slots and questions to show, and the
 // remembered ticks on tonight's prep checklist. Planner rules stay in the Rust core.
-import { format, isValid, parse, startOfDay } from 'date-fns'
+import { addDays, format, isValid, parse, startOfDay } from 'date-fns'
 
 import type { Household, SlotDef, SpecialDay } from '@/core'
 import { getStorage } from '@/storage'
@@ -13,13 +13,24 @@ export function nextDay(day: number): number {
   return (day + 1) % CYCLE_DAYS
 }
 
+/**
+ * The day Today opens on at `now`: today, or tomorrow once it's `tomorrowFrom` (HH:mm) or
+ * later. An unreadable time keeps it on today.
+ */
+export function homeDate(now: Date, tomorrowFrom: string): Date {
+  const from = minutes(tomorrowFrom, now)
+  const nowMinutes = now.getHours() * 60 + now.getMinutes()
+  const today = startOfDay(now)
+  return from != null && nowMinutes >= from ? addDays(today, 1) : today
+}
+
 /** How a shown date is written in the address, e.g. `2026-10-13`. */
 const DATE_PARAM = 'yyyy-MM-dd'
 
-/** The date named by `param` (as written by `dateParam`), or `today` when it names none. */
-export function shownDate(param: unknown, today: Date): Date {
-  const date = typeof param === 'string' ? parse(param, DATE_PARAM, today) : undefined
-  return date && isValid(date) ? date : startOfDay(today)
+/** The date named by `param` (as written by `dateParam`), or `home` when it names none. */
+export function shownDate(param: unknown, home: Date): Date {
+  const date = typeof param === 'string' ? parse(param, DATE_PARAM, home) : undefined
+  return date && isValid(date) ? date : startOfDay(home)
 }
 
 export function dateParam(date: Date): string {

@@ -9,6 +9,7 @@ import {
   loadPrepChecks,
   nextDay,
   savePrepChecks,
+  homeDate,
   shownDate,
   slotsOn,
   specialsThisWeek,
@@ -34,6 +35,18 @@ describe('today helpers', () => {
     for (const bad of [undefined, '', 'tomorrow', '2026-13-45', ['2026-10-21']]) {
       expect(shownDate(bad, today)).toEqual(new Date(2026, 9, 12))
     }
+  })
+
+  it('opens on tomorrow from the evening time', () => {
+    const monday = (h: number, m = 0) => new Date(2026, 9, 12, h, m)
+    expect(homeDate(monday(9), '20:00')).toEqual(new Date(2026, 9, 12))
+    expect(homeDate(monday(19, 59), '20:00')).toEqual(new Date(2026, 9, 12))
+    expect(homeDate(monday(20), '20:00')).toEqual(new Date(2026, 9, 13))
+    expect(homeDate(monday(23, 59), '20:00')).toEqual(new Date(2026, 9, 13))
+    expect(homeDate(monday(0, 30), '20:00')).toEqual(new Date(2026, 9, 12))
+    // At month's end tomorrow is the 1st.
+    expect(homeDate(new Date(2026, 9, 31, 21), '20:00')).toEqual(new Date(2026, 10, 1))
+    expect(homeDate(monday(21), '')).toEqual(new Date(2026, 9, 12))
   })
 
   it('wraps to the start of the rotation after the last day', () => {

@@ -1,7 +1,10 @@
 import type { Household, Plan } from '@/core'
 
 /** Bump this and add a step in migrations.ts whenever the stored shape changes. */
-export const SCHEMA_VERSION = 4
+export const SCHEMA_VERSION = 5
+
+/** When Today starts opening on tomorrow, unless she picks another time. */
+export const DEFAULT_TOMORROW_FROM = '20:00'
 
 /** An item on the user's own store master list (e.g. her Osher Ad list). */
 export interface StapleItem {
@@ -41,4 +44,9 @@ export interface AppData {
   notes: Record<string, string>
   /** What the app calls her when it greets her ("Let's get meal planning, …!"). '' for no name. */
   userName: string
+  /**
+   * From this time of day (HH:mm), the Today screen opens on tomorrow: by evening, tomorrow's
+   * meals are the ones she's preparing for.
+   */
+  tomorrowFrom: string
 }

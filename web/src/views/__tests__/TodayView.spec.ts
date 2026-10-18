@@ -93,7 +93,7 @@ describe('TodayView', () => {
     await user.click(screen.getByRole('button', { name: 'Next day' }))
     await vi.waitFor(() => expect(router.currentRoute.value.query.date).toBe('2026-10-13'))
     expect(screen.getByRole('heading', { name: 'Tuesday, 13 October' })).toBeInTheDocument()
-    expect(screen.getByText('Tuesday A')).toBeInTheDocument()
+    expect(screen.getByText('Tomorrow · Tuesday A')).toBeInTheDocument()
     const main = app.meal(app.cell(2, 'main')?.mealId)!
     expect(
       screen.getByRole('listitem', { name: `Main meal: ${main.name}. Tap to change.` }),
@@ -111,6 +111,39 @@ describe('TodayView', () => {
     await vi.waitFor(() => expect(router.currentRoute.value.query.date).toBeUndefined())
     expect(screen.getByRole('heading', { name: 'Monday, 12 October' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Rescue me' })).toBeInTheDocument()
+  })
+
+  it("opens on tomorrow from 8pm, with tonight's prep", async () => {
+    vi.setSystemTime(new Date(2026, 9, 12, 20, 30))
+    const store = await setupStore({ regenerate: true })
+    const { app } = store
+    const { user, router } = await mountRoute('/', store)
+    expect(screen.getByRole('heading', { name: 'Tuesday, 13 October' })).toBeInTheDocument()
+    expect(screen.getByText('Tomorrow · Tuesday A')).toBeInTheDocument()
+    const main = app.meal(app.cell(2, 'main')?.mealId)!
+    expect(
+      screen.getByRole('listitem', { name: `Main meal: ${main.name}. Tap to change.` }),
+    ).toBeInTheDocument()
+    expect(screen.getByText("Tonight's prep for tomorrow")).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^Back to/ })).not.toBeInTheDocument()
+
+    // Today is still a swipe back, with the rescue button.
+    await user.click(screen.getByRole('button', { name: 'Previous day' }))
+    await vi.waitFor(() => expect(router.currentRoute.value.query.date).toBe('2026-10-12'))
+    expect(screen.getByText('Today · Monday A')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Rescue me' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: 'Back to tomorrow' }))
+    await vi.waitFor(() => expect(router.currentRoute.value.query.date).toBeUndefined())
+    expect(screen.getByRole('heading', { name: 'Tuesday, 13 October' })).toBeInTheDocument()
+  })
+
+  it('opens on today before her chosen evening time', async () => {
+    vi.setSystemTime(new Date(2026, 9, 12, 20, 30))
+    const store = await setupStore()
+    store.app.setTomorrowFrom('21:00')
+    await mountRoute('/', store)
+    expect(screen.getByRole('heading', { name: 'Monday, 12 October' })).toBeInTheDocument()
   })
 
   it('turns the page with a swipe: left goes forward, right goes back', async () => {

@@ -1,6 +1,6 @@
 import { omit } from 'es-toolkit'
 
-import { SCHEMA_VERSION, type AppData } from './schema'
+import { DEFAULT_TOMORROW_FROM, SCHEMA_VERSION, type AppData } from './schema'
 
 /** One step per version: migrations[n] upgrades data from version n to n + 1. */
 const migrations: Record<number, (data: Record<string, unknown>) => Record<string, unknown>> = {
@@ -17,6 +17,8 @@ const migrations: Record<number, (data: Record<string, unknown>) => Record<strin
   2: (data) => ({ ...data, notes: {} }),
   // v4: the name the welcome greets her by.
   3: (data) => ({ ...data, userName: '' }),
+  // v5: the evening time from which Today opens on tomorrow.
+  4: (data) => ({ ...data, tomorrowFrom: DEFAULT_TOMORROW_FROM }),
 }
 
 export class UnsupportedDataError extends Error {}

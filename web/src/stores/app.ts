@@ -218,6 +218,11 @@ export const useAppStore = defineStore('app', () => {
     data.value.userName = name
   }
 
+  /** Sets the time of day (HH:mm) from which Today opens on tomorrow. */
+  function setTomorrowFrom(time: string) {
+    data.value.tomorrowFrom = time
+  }
+
   // --- Core queries -------------------------------------------------------
 
   const mealOptions = (day: number, slotId: string) =>
@@ -259,6 +264,7 @@ export const useAppStore = defineStore('app', () => {
     removeEater,
     setRotationStart,
     setUserName,
+    setTomorrowFrom,
     mealOptions,
     checkDay,
     prepFor,

@@ -3,7 +3,7 @@ import { format, startOfWeek } from 'date-fns'
 import { validate } from '@/core'
 import { getStorage } from '@/storage'
 import { migrate } from './migrations'
-import { SCHEMA_VERSION, type AppData } from './schema'
+import { DEFAULT_TOMORROW_FROM, SCHEMA_VERSION, type AppData } from './schema'
 
 const KEY = 'app-data'
 
@@ -22,6 +22,7 @@ export function emptyData(today = new Date()): AppData {
     specialAnswers: {},
     notes: {},
     userName: '',
+    tomorrowFrom: DEFAULT_TOMORROW_FROM,
   }
 }
 
