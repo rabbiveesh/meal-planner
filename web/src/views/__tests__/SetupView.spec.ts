@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { screen, within } from '@testing-library/dom'
+import { fireEvent, screen, within } from '@testing-library/dom'
 import { flushPromises } from '@vue/test-utils'
 
 import { emptyData, exportJson } from '@/data/repository'
@@ -79,6 +79,18 @@ describe('SetupView', () => {
     await user.clear(input)
     await user.type(input, '10/18/2026{Enter}')
     expect(app.data.rotationStart).toBe('2026-10-18')
+  })
+
+  it('sets when Today starts showing tomorrow', async () => {
+    const { app } = await setup()
+    const input = screen.getByLabelText('Show tomorrow from')
+    expect(input).toHaveValue('20:00')
+    // A time picker hands over a whole time at once.
+    await fireEvent.input(input, { target: { value: '19:30' } })
+    expect(app.data.tomorrowFrom).toBe('19:30')
+    // Clearing the field keeps the time she had.
+    await fireEvent.input(input, { target: { value: '' } })
+    expect(app.data.tomorrowFrom).toBe('19:30')
   })
 
   it('restores a backup after asking, and explains a bad file', async () => {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
-// One day at a time, today by default. Swiping (or the arrows) turns to the next or previous
+// One day at a time, opening on today, or on tomorrow in the evening (from her chosen time,
+// when tomorrow's meals are what she's preparing for). Swiping (or the arrows) turns to the next or previous
 // day; tapping a meal changes it. The shown date lives in the URL so a refresh keeps her place.
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -11,7 +12,7 @@ import PrepChecklist from '@/components/today/PrepChecklist.vue'
 import TodayMeals from '@/components/today/TodayMeals.vue'
 import WeekQuestions from '@/components/today/WeekQuestions.vue'
 import { dayLabel, rotationDay } from '@/lib/rotation'
-import { dateParam, nextDay, shownDate } from '@/lib/today'
+import { dateParam, homeDate, nextDay, shownDate } from '@/lib/today'
 import { useAppStore } from '@/stores/app'
 
 const app = useAppStore()
@@ -23,13 +24,20 @@ const firstRun = computed(() => app.firstRun || app.household.meals.length === 0
 const tomorrow = computed(() => nextDay(app.today))
 const tomorrowKey = format(addDays(now, 1), 'yyyy-MM-dd')
 
-const date = computed(() => shownDate(route.query.date, now))
+const home = computed(() => homeDate(now, app.data.tomorrowFrom))
+const date = computed(() => shownDate(route.query.date, home.value))
+const isHome = computed(() => isSameDay(date.value, home.value))
 const isToday = computed(() => isSameDay(date.value, now))
 const day = computed(() => rotationDay(date.value, app.data.rotationStart))
+const subtitle = computed(() => {
+  if (isToday.value) return `Today · ${dayLabel(day.value)}`
+  if (isSameDay(date.value, addDays(now, 1))) return `Tomorrow · ${dayLabel(day.value)}`
+  return dayLabel(day.value)
+})
 
-/** Shows `to`; today needs no date in the URL. */
+/** Shows `to`; the day the screen opens on needs no date in the URL. */
 function show(to: Date) {
-  const query = { ...route.query, date: isSameDay(to, now) ? undefined : dateParam(to) }
+  const query = { ...route.query, date: isSameDay(to, home.value) ? undefined : dateParam(to) }
   void router.replace({ query })
 }
 
@@ -65,22 +73,22 @@ if (snackbar.value) {
       <div class="flex-grow-1 text-center">
         <h1 class="text-h5">{{ format(date, 'EEEE, d MMMM') }}</h1>
         <div class="text-body-1 text-medium-emphasis">
-          {{ isToday ? `Today · ${dayLabel(day)}` : dayLabel(day) }}
+          {{ subtitle }}
         </div>
       </div>
       <v-btn icon="mdi-chevron-right" variant="tonal" aria-label="Next day" @click="turn(1)" />
     </header>
 
     <v-btn
-      v-if="!isToday"
+      v-if="!isHome"
       variant="text"
       color="primary"
       prepend-icon="mdi-calendar-today"
       block
       class="mb-4"
-      @click="show(now)"
+      @click="show(home)"
     >
-      Back to today
+      {{ isSameDay(home, now) ? 'Back to today' : 'Back to tomorrow' }}
     </v-btn>
 
     <v-btn
@@ -96,7 +104,8 @@ if (snackbar.value) {
     </v-btn>
 
     <TodayMeals :day="day" :date="dateParam(date)" @pick="openSwap" />
-    <template v-if="isToday">
+    <!-- Tonight's prep and this week's questions belong on the day the screen opens on. -->
+    <template v-if="isHome">
       <WeekQuestions :today="app.today" />
       <PrepChecklist :day="tomorrow" :list-key="tomorrowKey" />
     </template>

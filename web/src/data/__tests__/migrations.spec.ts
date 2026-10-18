@@ -36,7 +36,16 @@ describe('v2 to v3', () => {
     const v2 = { ...emptyData(), version: 2 }
     delete (v2 as Partial<typeof v2>).notes
     const v3 = migrate(v2)
-    expect(v3.version).toBe(3)
     expect(v3.notes).toEqual({})
+  })
+})
+
+describe('v3 to v4', () => {
+  it('opens on tomorrow from 8pm', () => {
+    const v3 = { ...emptyData(), version: 3 }
+    delete (v3 as Partial<typeof v3>).tomorrowFrom
+    const v4 = migrate(v3)
+    expect(v4.version).toBe(4)
+    expect(v4.tomorrowFrom).toBe('20:00')
   })
 })
