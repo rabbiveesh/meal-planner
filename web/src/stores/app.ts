@@ -17,6 +17,7 @@ import { emptyData, loadAppData, saveAppData } from '@/data/repository'
 import type { AppData } from '@/data/schema'
 import {
   removeEater as withoutEater,
+  removeMeal as withoutMeal,
   removeSlot as withoutSlot,
   planWithoutSlot,
 } from '@/lib/household'
@@ -188,9 +189,9 @@ export const useAppStore = defineStore('app', () => {
     else meals.push(m)
   }
 
-  /** Deletes a meal and clears it from the plan. */
+  /** Deletes a meal and clears it from the every-week rules and the plan. */
   function deleteMeal(id: string) {
-    household.value.meals = household.value.meals.filter((m) => m.id !== id)
+    data.value.household = withoutMeal(plain(household.value), id)
     data.value.plan.cells = data.value.plan.cells.filter((c) => c.mealId !== id)
   }
 

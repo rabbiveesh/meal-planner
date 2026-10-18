@@ -173,6 +173,17 @@ pub struct SpecialDay {
     pub kashrut: Kashrut,
 }
 
+/// A meal that is planned every week on the same day, e.g. soup every Sunday night.
+/// With several meals the planner takes turns between them.
+#[derive(Debug, Clone, Serialize, Deserialize, Tsify)]
+#[serde(rename_all = "camelCase")]
+pub struct FixedMeal {
+    /// Weekday (0 = Sunday).
+    pub day: u8,
+    pub slot_id: String,
+    pub meal_ids: Vec<String>,
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Tsify)]
 #[serde(rename_all = "camelCase")]
 pub struct Rules {
@@ -187,6 +198,9 @@ pub struct Rules {
     #[serde(default)]
     #[tsify(optional)]
     pub special_days: Vec<SpecialDay>,
+    #[serde(default)]
+    #[tsify(optional)]
+    pub fixed_meals: Vec<FixedMeal>,
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize, Tsify)]
@@ -241,6 +255,13 @@ impl Household {
             .special_days
             .iter()
             .find(|s| s.day == weekday && s.slot_id == slot_id)
+    }
+    /// The every-week meal rule for a weekday and slot, if any.
+    pub fn fixed(&self, weekday: u8, slot_id: &str) -> Option<&FixedMeal> {
+        self.rules
+            .fixed_meals
+            .iter()
+            .find(|f| f.day == weekday && f.slot_id == slot_id)
     }
     /// Whether a slot is planned on a rotation day.
     pub fn slot_on_day(&self, slot: &SlotDef, day: u8) -> bool {

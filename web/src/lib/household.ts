@@ -1,6 +1,6 @@
 // Pure helpers for editing household settings (eaters, slots, weekly rules) on the Setup
 // screen. Each returns new data; the screen hands it to the store.
-import type { Eater, Household, Plan, Rules, SlotDef, SpecialDay } from '@/core'
+import type { Eater, FixedMeal, Household, Plan, Rules, SlotDef, SpecialDay } from '@/core'
 import { newId } from './ids'
 
 export const ALL_WEEKDAYS = [0, 1, 2, 3, 4, 5, 6] as const
@@ -17,6 +17,10 @@ export function newSlot(): SlotDef {
 
 export function newSpecialDay(slotId: string): SpecialDay {
   return { day: 0, slotId, label: '', question: '', kashrut: 'meat' }
+}
+
+export function newFixedMeal(slotId: string): FixedMeal {
+  return { day: 0, slotId, mealIds: [] }
 }
 
 function text(value: string | undefined | null): string | undefined {
@@ -53,6 +57,10 @@ export function cleanSpecialDay(s: SpecialDay): SpecialDay {
   return { ...s, label: s.label.trim(), question: s.question.trim() }
 }
 
+export function cleanFixedMeal(f: FixedMeal): FixedMeal {
+  return { day: f.day, slotId: f.slotId, mealIds: [...new Set(f.mealIds)] }
+}
+
 /** Puts `item` in place of the entry with the same id, or appends it. */
 export function upsert<T extends { id: string }>(list: readonly T[], item: T): T[] {
   const i = list.findIndex((x) => x.id === item.id)
@@ -83,7 +91,8 @@ export function mealsUsingSlot(h: Household, slotId: string): number {
 
 /**
  * Removes a slot and every reference to it, so no screen is left pointing at a slot that
- * no longer exists: meals' slots and leftovers, the main slot rule and special days.
+ * no longer exists: meals' slots and leftovers, the main slot rule, special days and
+ * every-week meals.
  */
 export function removeSlot(h: Household, slotId: string): Household {
   const rules = h.rules ?? {}
@@ -99,6 +108,25 @@ export function removeSlot(h: Household, slotId: string): Household {
       ...rules,
       mainSlotId: rules.mainSlotId === slotId ? '' : rules.mainSlotId,
       specialDays: rules.specialDays?.filter((s) => s.slotId !== slotId),
+      fixedMeals: rules.fixedMeals?.filter((f) => f.slotId !== slotId),
+    },
+  }
+}
+
+/**
+ * Removes a meal and its place in the every-week rules; a rule left with no meals goes too.
+ * The plan's cells are the caller's to clear.
+ */
+export function removeMeal(h: Household, mealId: string): Household {
+  const rules = h.rules ?? {}
+  return {
+    ...h,
+    meals: h.meals.filter((m) => m.id !== mealId),
+    rules: {
+      ...rules,
+      fixedMeals: rules.fixedMeals
+        ?.map((f) => ({ ...f, mealIds: f.mealIds.filter((id) => id !== mealId) }))
+        .filter((f) => f.mealIds.length > 0),
     },
   }
 }
