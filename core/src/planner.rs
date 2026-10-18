@@ -30,10 +30,12 @@ pub fn warnings(h: &Household, plan: &Plan, day: u8, slot_id: &str, meal: &Meal)
     let Some(slot) = h.slot(slot_id) else {
         return vec!["Unknown slot".into()];
     };
-    if !meal.slots.iter().any(|s| s == slot_id) {
+    // Her every-week rule puts this meal here on purpose, whatever its own settings say.
+    let fixed_here = is_fixed(h, weekday, slot_id, &meal.id);
+    if !fixed_here && !meal.slots.iter().any(|s| s == slot_id) {
         w.push(format!("Not usually a {}", slot.name));
     }
-    if !meal.days.is_empty() && !meal.days.contains(&weekday) {
+    if !fixed_here && !meal.days.is_empty() && !meal.days.contains(&weekday) {
         w.push("Not set for this day of the week".into());
     }
     if slot_id == h.rules.main_slot_id
@@ -42,7 +44,7 @@ pub fn warnings(h: &Household, plan: &Plan, day: u8, slot_id: &str, meal: &Meal)
     {
         w.push("Needs cooking fresh, but this isn't a cook-fresh day".into());
     }
-    let repeat = plan.cells.iter().find(|c| {
+    let repeat = plan.cells.iter().filter(|_| !fixed_here).find(|c| {
         c.slot_id == slot_id
             && c.day != day
             && !c.leftover
@@ -72,12 +74,18 @@ pub fn warnings(h: &Household, plan: &Plan, day: u8, slot_id: &str, meal: &Meal)
     w
 }
 
+/// Whether an every-week rule names `meal_id` for this weekday and slot.
+fn is_fixed(h: &Household, weekday: u8, slot_id: &str, meal_id: &str) -> bool {
+    h.fixed(weekday, slot_id)
+        .is_some_and(|f| f.meal_ids.iter().any(|id| id == meal_id))
+}
+
 /// All meals that could go in a cell, best fits first. Powers the manual swap list.
 pub fn options(h: &Household, plan: &Plan, day: u8, slot_id: &str) -> Vec<MealOption> {
     let mut out: Vec<MealOption> = h
         .meals
         .iter()
-        .filter(|m| m.slots.iter().any(|s| s == slot_id))
+        .filter(|m| m.slots.iter().any(|s| s == slot_id) || is_fixed(h, day % 7, slot_id, &m.id))
         .map(|m| MealOption {
             meal_id: m.id.clone(),
             name: m.name.clone(),
@@ -94,6 +102,7 @@ pub fn options(h: &Household, plan: &Plan, day: u8, slot_id: &str) -> Vec<MealOp
 }
 
 /// Fills every unlocked cell of the rotation. Locked cells are kept as they are.
+/// Every-week meals go in first, so everything else is planned around them.
 pub fn generate(h: &Household, previous: &Plan, seed: u64) -> Plan {
     let mut rng = ChaCha8Rng::seed_from_u64(seed);
     let mut plan = Plan {
@@ -113,6 +122,22 @@ pub fn generate(h: &Household, previous: &Plan, seed: u64) -> Plan {
             .min()
             .unwrap_or(u32::MAX)
     });
+
+    for day in 0..CYCLE_DAYS {
+        for slot in &slots {
+            if !h.slot_on_day(slot, day) || plan.cell(day, &slot.id).is_some() {
+                continue;
+            }
+            if let Some(id) = pick_fixed(h, &plan, day, &slot.id) {
+                plan.cells.push(Cell {
+                    day,
+                    slot_id: slot.id.clone(),
+                    meal_id: Some(id),
+                    ..Default::default()
+                });
+            }
+        }
+    }
 
     for day in 0..CYCLE_DAYS {
         for slot in &slots {
@@ -145,6 +170,22 @@ pub fn generate(h: &Household, previous: &Plan, seed: u64) -> Plan {
         }
     }
     plan
+}
+
+/// The every-week meal for a cell, taking turns: the one planned least so far, in her order.
+fn pick_fixed(h: &Household, plan: &Plan, day: u8, slot_id: &str) -> Option<String> {
+    let uses = |id: &str| {
+        plan.cells
+            .iter()
+            .filter(|c| c.meal_id.as_deref() == Some(id))
+            .count()
+    };
+    h.fixed(day % 7, slot_id)?
+        .meal_ids
+        .iter()
+        .filter(|id| h.meal(id).is_some())
+        .min_by_key(|id| uses(id))
+        .cloned()
 }
 
 fn pick(
@@ -187,6 +228,7 @@ fn pick(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::model::FixedMeal;
     use crate::test_support::household;
 
     #[test]
@@ -275,6 +317,96 @@ mod tests {
                 assert_eq!(next.meal_id.as_deref(), Some("chicken"));
             }
         }
+    }
+
+    fn with_fixed(day: u8, slot_id: &str, meal_ids: &[&str]) -> Household {
+        let mut h = household();
+        h.rules.fixed_meals.push(FixedMeal {
+            day,
+            slot_id: slot_id.into(),
+            meal_ids: meal_ids.iter().map(|id| id.to_string()).collect(),
+        });
+        h
+    }
+
+    #[test]
+    fn every_week_meal_is_planned_on_its_day_both_weeks() {
+        let h = with_fixed(1, "main", &["shawarma"]);
+        for seed in 0..20 {
+            let plan = generate(&h, &Plan::default(), seed);
+            for day in [1, 8] {
+                let c = plan.cell(day, "main").unwrap();
+                assert_eq!(c.meal_id.as_deref(), Some("shawarma"), "seed {seed}");
+                assert!(!c.locked, "a rule, not a hand-picked cell");
+            }
+            let others = plan
+                .cells
+                .iter()
+                .filter(|c| c.meal_id.as_deref() == Some("shawarma") && c.slot_id == "main");
+            assert_eq!(others.count(), 2, "seed {seed}: not planned on other days");
+        }
+    }
+
+    #[test]
+    fn every_week_meals_take_turns() {
+        let h = with_fixed(0, "main", &["soup", "pasta"]);
+        let plan = generate(&h, &Plan::default(), 5);
+        assert_eq!(
+            plan.cell(0, "main").unwrap().meal_id.as_deref(),
+            Some("soup")
+        );
+        assert_eq!(
+            plan.cell(7, "main").unwrap().meal_id.as_deref(),
+            Some("pasta")
+        );
+    }
+
+    #[test]
+    fn every_week_meal_has_no_warnings_where_it_is_fixed() {
+        // Not a main meal, and repeating every 7 days in a slot that allows 14.
+        let h = with_fixed(1, "main", &["salad"]);
+        let plan = generate(&h, &Plan::default(), 2);
+        assert_eq!(
+            plan.cell(1, "main").unwrap().meal_id.as_deref(),
+            Some("salad")
+        );
+        let salad = h.meal("salad").unwrap();
+        assert!(warnings(&h, &plan, 8, "main", salad).is_empty());
+        assert!(options(&h, &plan, 1, "main")
+            .iter()
+            .any(|o| o.meal_id == "salad" && o.warnings.is_empty()));
+        // Elsewhere it is still a poor fit.
+        assert!(!warnings(&h, &plan, 3, "main", salad).is_empty());
+    }
+
+    #[test]
+    fn every_week_rule_with_deleted_meals_falls_back_to_normal_planning() {
+        let h = with_fixed(0, "main", &["gone"]);
+        let plan = generate(&h, &Plan::default(), 1);
+        assert!(plan.cell(0, "main").unwrap().meal_id.is_some());
+    }
+
+    #[test]
+    fn locked_cell_beats_every_week_meal() {
+        let h = with_fixed(3, "main", &["shawarma"]);
+        let locked = Plan {
+            cells: vec![Cell {
+                day: 3,
+                slot_id: "main".into(),
+                meal_id: Some("soup".into()),
+                locked: true,
+                ..Default::default()
+            }],
+        };
+        let plan = generate(&h, &locked, 7);
+        assert_eq!(
+            plan.cell(3, "main").unwrap().meal_id.as_deref(),
+            Some("soup")
+        );
+        assert_eq!(
+            plan.cell(10, "main").unwrap().meal_id.as_deref(),
+            Some("shawarma")
+        );
     }
 
     #[test]

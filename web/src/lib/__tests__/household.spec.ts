@@ -6,7 +6,9 @@ import {
   mealsUsingSlot,
   move,
   planWithoutSlot,
+  cleanFixedMeal,
   removeEater,
+  removeMeal,
   removeSlot,
   upsert,
   withRules,
@@ -37,6 +39,10 @@ const household = (): Household => ({
     mainSlotId: 'main',
     specialDays: [
       { day: 0, slotId: 'lunch', label: 'Leftovers', question: 'Any?', kashrut: 'meat' },
+    ],
+    fixedMeals: [
+      { day: 0, slotId: 'main', mealIds: ['m1', 'm2'] },
+      { day: 1, slotId: 'lunch', mealIds: ['m1'] },
     ],
   },
 })
@@ -86,10 +92,25 @@ describe('household editing', () => {
     expect(next.meals.map((m) => m.slots)).toEqual([['main'], ['main']])
     expect(next.meals[1]!.leftoversFor).toEqual([])
     expect(next.rules?.specialDays).toEqual([])
+    expect(next.rules?.fixedMeals?.map((f) => f.slotId)).toEqual(['main'])
     expect(next.rules?.mainSlotId).toBe('main')
     expect(removeSlot(h, 'main').rules?.mainSlotId).toBe('')
     // The input is untouched.
     expect(h.slots).toHaveLength(2)
+  })
+
+  it('removes a meal from the every-week rules, dropping rules left empty', () => {
+    const next = removeMeal(household(), 'm1')
+    expect(next.meals.map((m) => m.id)).toEqual(['m2'])
+    expect(next.rules?.fixedMeals).toEqual([{ day: 0, slotId: 'main', mealIds: ['m2'] }])
+    expect(next.rules?.specialDays).toHaveLength(1)
+  })
+
+  it('drops repeated meals from an every-week rule', () => {
+    expect(cleanFixedMeal({ day: 1, slotId: 'main', mealIds: ['a', 'b', 'a'] }).mealIds).toEqual([
+      'a',
+      'b',
+    ])
   })
 
   it('drops the removed slot from the plan', () => {

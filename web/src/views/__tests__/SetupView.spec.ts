@@ -74,6 +74,34 @@ describe('SetupView', () => {
     expect(app.household.rules?.freshDays).toEqual([0, 2])
   })
 
+  it('adds an every-week meal that the plan then always has', async () => {
+    const { app, user } = await setup()
+    await user.click(screen.getByRole('button', { name: 'Add every-week meal' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Add every-week meal' })
+    await user.click(within(dialog).getByRole('button', { name: 'Save' }))
+    expect(await within(dialog).findByText('Pick at least one meal')).toBeInTheDocument()
+
+    await user.click(within(dialog).getByRole('combobox', { name: 'Day' }))
+    await user.click(await screen.findByRole('option', { name: 'Monday' }))
+    await user.click(within(dialog).getByRole('combobox', { name: 'Meals' }))
+    await user.click(await screen.findByRole('option', { name: 'Risotto' }))
+    await user.click(await screen.findByRole('option', { name: 'Chicken soup with ramen' }))
+    await user.click(within(dialog).getByRole('button', { name: 'Save' }))
+
+    const risotto = app.household.meals.find((m) => m.name === 'Risotto')!.id
+    const soup = app.household.meals.find((m) => m.name === 'Chicken soup with ramen')!.id
+    expect(app.household.rules?.fixedMeals).toEqual([
+      { day: 1, slotId: 'main', mealIds: [risotto, soup] },
+    ])
+    expect(
+      await screen.findByText(`${shortWeekday(1)}: Risotto or Chicken soup with ramen`),
+    ).toBeInTheDocument()
+
+    app.regenerate()
+    const mondays = app.data.plan.cells.filter((c) => c.slotId === 'main' && c.day % 7 === 1)
+    expect(mondays.map((c) => c.mealId)).toEqual([risotto, soup])
+  })
+
   it('only accepts a Sunday for the rotation start', async () => {
     const { app, user } = await setup()
     const input = screen.getByRole('textbox', { name: 'Week A starts on Sunday' })
