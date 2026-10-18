@@ -1,7 +1,8 @@
 // Global test setup, loaded through `setupFiles` in vitest.config.ts.
 import '@testing-library/jest-dom/vitest'
 import { enableAutoUnmount } from '@vue/test-utils'
-import { afterEach } from 'vitest'
+import type confetti from 'canvas-confetti'
+import { afterEach, vi } from 'vitest'
 
 // jsdom lacks a few browser APIs that Vuetify uses.
 class ResizeObserverStub {
@@ -25,6 +26,9 @@ globalThis.visualViewport ??= Object.assign(new EventTarget(), {
   onscroll: null,
   onscrollend: null,
 }) as VisualViewport
+
+// canvas-confetti draws on a canvas, which jsdom can't render; tests check its calls instead.
+vi.mock('canvas-confetti', () => ({ default: vi.fn<typeof confetti>() }))
 
 // Unmount whatever a test mounted, then drop what Vuetify left in the body
 // (the overlay container that dialogs teleport into).
