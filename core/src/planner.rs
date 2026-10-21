@@ -101,7 +101,9 @@ pub fn options(h: &Household, plan: &Plan, day: u8, slot_id: &str) -> Vec<MealOp
     out
 }
 
-/// Fills every unlocked cell of the rotation. Locked cells are kept as they are.
+/// Fills every unlocked cell of the rotation from her meals for that slot, even when none fits
+/// every rule; only a kashrut conflict, or no meals for the slot at all, leaves a cell empty.
+/// Locked cells are kept as they are.
 /// Every-week meals go in first, so everything else is planned around them.
 pub fn generate(h: &Household, previous: &Plan, seed: u64) -> Plan {
     let mut rng = ChaCha8Rng::seed_from_u64(seed);
@@ -205,6 +207,8 @@ fn pick(
     h.meals
         .iter()
         .filter(|m| m.slots.iter().any(|s| s == slot_id))
+        // Kashrut is the one rule never broken to fill a cell.
+        .filter(|m| day_conflicts(h, plan, day, Some((slot_id, m.kashrut))).is_empty())
         .map(|m| {
             let w = warnings(h, plan, day, slot_id, m).len() as f64;
             let mut score = w * 100.0 + uses(&m.id) * 3.0 + rng.random::<f64>() * 5.0;
@@ -219,8 +223,8 @@ fn pick(
             }
             (score, m)
         })
-        // Leave the cell empty rather than plant a meal that breaks the rules.
-        .filter(|(score, _)| *score < 100.0)
+        // Never leave a cell blank: when nothing fits cleanly, the meal breaking the fewest
+        // rules goes in, and the swap list shows her why.
         .min_by(|a, b| a.0.total_cmp(&b.0))
         .map(|(_, m)| m.id.clone())
 }
@@ -257,7 +261,11 @@ mod tests {
 
     #[test]
     fn mains_do_not_repeat_within_two_weeks() {
-        let h = household();
+        // One main for each of the ten main-meal days.
+        let mut h = household();
+        let mut stew = h.meal("soup").unwrap().clone();
+        stew.id = "stew".into();
+        h.meals.push(stew);
         for seed in 0..20 {
             let plan = generate(&h, &Plan::default(), seed);
             let mains: Vec<_> = plan
@@ -271,6 +279,55 @@ mod tests {
             dedup.dedup();
             assert_eq!(mains.len(), dedup.len(), "seed {seed}: {mains:?}");
         }
+    }
+
+    #[test]
+    fn never_leaves_a_cell_blank_when_she_has_meals_for_it() {
+        // Nine mains for ten days, six light meals for ten: some repeats are unavoidable.
+        let h = household();
+        for seed in 0..20 {
+            let plan = generate(&h, &Plan::default(), seed);
+            for slot in &h.slots {
+                for day in (0..CYCLE_DAYS).filter(|&d| h.slot_on_day(slot, d)) {
+                    let c = plan.cell(day, &slot.id).unwrap();
+                    let m = c.meal_id.as_deref().and_then(|id| h.meal(id));
+                    let m = m.unwrap_or_else(|| panic!("seed {seed}: {} day {day}", slot.id));
+                    assert!(
+                        c.leftover || m.slots.contains(&slot.id),
+                        "only her meals for the slot"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn short_pool_spreads_meals_before_repeating() {
+        let h = household();
+        let plan = generate(&h, &Plan::default(), 1);
+        let mains: Vec<_> = plan
+            .cells
+            .iter()
+            .filter(|c| c.slot_id == "main")
+            .filter_map(|c| c.meal_id.clone())
+            .collect();
+        let mut dedup = mains.clone();
+        dedup.sort();
+        dedup.dedup();
+        assert_eq!(
+            dedup.len(),
+            9,
+            "every main used before one repeats: {mains:?}"
+        );
+    }
+
+    #[test]
+    fn slot_with_no_meals_stays_empty() {
+        let mut h = household();
+        h.meals
+            .retain(|m| !m.slots.contains(&"takeAlong".to_string()));
+        let plan = generate(&h, &Plan::default(), 1);
+        assert!(plan.cell(0, "takeAlong").unwrap().meal_id.is_none());
     }
 
     #[test]
