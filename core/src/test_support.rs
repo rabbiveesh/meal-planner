@@ -34,6 +34,7 @@ fn slot(
         },
         min_repeat_days: CYCLE_DAYS,
         prep_night_before: id == "lunch",
+        hand_written: false,
     }
 }
 

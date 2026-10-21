@@ -12,7 +12,7 @@ import {
 } from 'date-fns'
 
 import * as core from '@/core'
-import type { Cell, Household, Meal, Plan, SpecialDay } from '@/core'
+import type { Cell, Household, Meal, Plan, SlotDef, SpecialDay } from '@/core'
 import { emptyData, loadAppData, saveAppData } from '@/data/repository'
 import type { AppData } from '@/data/schema'
 import {
@@ -20,6 +20,7 @@ import {
   removeMeal as withoutMeal,
   removeSlot as withoutSlot,
   planWithoutSlot,
+  upsert,
 } from '@/lib/household'
 import { rotationDay } from '@/lib/rotation'
 
@@ -199,6 +200,16 @@ export const useAppStore = defineStore('app', () => {
     data.value.household = plain(h)
   }
 
+  /**
+   * Adds or updates a slot. A hand-written slot loses its planned meals, so they don't
+   * linger in tonight's prep or the shopping list.
+   */
+  function saveSlot(slot: SlotDef) {
+    const h = plain(household.value)
+    data.value.household = { ...h, slots: upsert(h.slots, plain(slot)) }
+    if (slot.handWritten) data.value.plan = planWithoutSlot(data.value.plan, slot.id)
+  }
+
   /** Removes a slot and every reference to it: meals, rules and plan cells. */
   function removeSlot(slotId: string) {
     data.value.household = withoutSlot(plain(household.value), slotId)
@@ -261,6 +272,7 @@ export const useAppStore = defineStore('app', () => {
     saveMeal,
     deleteMeal,
     setHousehold,
+    saveSlot,
     removeSlot,
     removeEater,
     setRotationStart,

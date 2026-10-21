@@ -211,6 +211,24 @@ describe('TodayView', () => {
     )
   })
 
+  it('shows a hand-written slot as a box to write in, never a planned meal', async () => {
+    const store = await setupStore()
+    store.app.saveSlot({
+      id: 'chedva',
+      name: "Chedva's food",
+      view: 'home',
+      days: [0, 1, 2, 3, 4, 5],
+      handWritten: true,
+    })
+    store.app.regenerate()
+    expect(store.app.data.plan.cells.some((c) => c.slotId === 'chedva')).toBe(false)
+    const { user } = await mountRoute({ path: '/', query: { date: '2026-10-13' } }, store)
+
+    expect(screen.queryByRole('button', { name: /^Chedva's food:/ })).not.toBeInTheDocument()
+    await user.type(screen.getByRole('textbox', { name: "Chedva's food" }), 'mashed potatoes')
+    expect(store.app.note('2026-10-13', 'chedva')).toBe('mashed potatoes')
+  })
+
   it('shows a message passed in navigation state, once', async () => {
     const { router } = await mountRoute({
       path: '/',

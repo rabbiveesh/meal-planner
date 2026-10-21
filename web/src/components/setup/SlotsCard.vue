@@ -1,5 +1,6 @@
 <script setup lang="ts">
-// The meals of the day (slots): name, which chart, who eats when, days, repeat limit.
+// The meals of the day (slots): name, which chart, who eats when, days, repeat limit, or
+// written by hand each day instead of planned.
 import { computed, ref, toRaw, useId } from 'vue'
 
 import type { SlotDef } from '@/core'
@@ -8,7 +9,7 @@ import WeekdayChips from '@/components/WeekdayChips.vue'
 import EditDialog from './EditDialog.vue'
 import { PLAN_VIEWS, viewLabel } from '@/lib/plan'
 import { weekdayList } from '@/lib/labels'
-import { cleanSlot, mealsUsingSlot, move, newSlot, upsert } from '@/lib/household'
+import { cleanSlot, mealsUsingSlot, move, newSlot } from '@/lib/household'
 import { useAppStore } from '@/stores/app'
 
 const app = useAppStore()
@@ -31,8 +32,7 @@ function edit(s: SlotDef) {
 
 function save() {
   if (!draft.value) return
-  const h = toRaw(app.household)
-  app.setHousehold({ ...h, slots: upsert(h.slots, cleanSlot(draft.value)) })
+  app.saveSlot(cleanSlot(draft.value))
   draft.value = null
 }
 
@@ -60,12 +60,16 @@ function summary(s: SlotDef): string {
     s.childTime && `kids ${s.childTime}`,
     s.adultTime && `adults ${s.adultTime}`,
   ].filter(Boolean)
+  if (s.handWritten) {
+    return [viewLabel(s.view), 'written by hand', weekdayList(s.days, 'no days')].join(' · ')
+  }
   return [viewLabel(s.view), ...times, weekdayList(s.days, 'no days')].join(' · ')
 }
 
 const required = (v: string) => !!v?.trim() || 'Enter a name'
 const someoneEats = () =>
-  !!(draft.value?.adultTime || draft.value?.childTime) || 'Set a time for adults, children or both'
+  !!(draft.value?.handWritten || draft.value?.adultTime || draft.value?.childTime) ||
+  'Set a time for adults, children or both'
 </script>
 
 <template>
@@ -129,6 +133,16 @@ const someoneEats = () =>
           :rules="[required]"
           data-test="name"
         />
+        <v-switch
+          v-model="draft.handWritten"
+          label="Write it by hand each day"
+          hint="Never planned from your meals. Today shows a box to write in, and the printed chart a blank space."
+          persistent-hint
+          color="primary"
+          inset
+          class="mb-4"
+          data-test="hand-written"
+        />
         <div :id="viewLabelId" class="text-subtitle-1">Shown on chart</div>
         <ChoiceChips
           v-model="draft.view"
@@ -140,45 +154,53 @@ const someoneEats = () =>
           column
           class="mb-2"
         />
-        <v-row dense>
-          <v-col cols="6">
-            <v-text-field
-              v-model="draft.childTime"
-              type="time"
-              label="Kids eat at"
-              clearable
-              :rules="[someoneEats]"
-              hint="Empty: kids don't eat it"
-              persistent-hint
-            />
-          </v-col>
-          <v-col cols="6">
-            <v-text-field
-              v-model="draft.adultTime"
-              type="time"
-              label="Adults eat at"
-              clearable
-              :rules="[someoneEats]"
-              hint="Empty: adults don't eat it"
-              persistent-hint
-            />
-          </v-col>
-        </v-row>
-        <WeekdayChips v-model="draft.days" label="Days it's planned" class="mt-2" />
-        <v-number-input
-          :model-value="draft.minRepeatDays ?? 0"
-          label="Days before the same meal can repeat"
-          :min="0"
-          :max="14"
-          @update:model-value="draft.minRepeatDays = $event ?? 0"
+        <WeekdayChips
+          v-if="draft.handWritten"
+          v-model="draft.days"
+          label="Days it's shown"
+          class="mt-2"
         />
-        <v-switch
-          v-model="draft.prepNightBefore"
-          label="Prepared the night before"
-          color="primary"
-          inset
-          hide-details
-        />
+        <template v-else>
+          <v-row dense>
+            <v-col cols="6">
+              <v-text-field
+                v-model="draft.childTime"
+                type="time"
+                label="Kids eat at"
+                clearable
+                :rules="[someoneEats]"
+                hint="Empty: kids don't eat it"
+                persistent-hint
+              />
+            </v-col>
+            <v-col cols="6">
+              <v-text-field
+                v-model="draft.adultTime"
+                type="time"
+                label="Adults eat at"
+                clearable
+                :rules="[someoneEats]"
+                hint="Empty: adults don't eat it"
+                persistent-hint
+              />
+            </v-col>
+          </v-row>
+          <WeekdayChips v-model="draft.days" label="Days it's planned" class="mt-2" />
+          <v-number-input
+            :model-value="draft.minRepeatDays ?? 0"
+            label="Days before the same meal can repeat"
+            :min="0"
+            :max="14"
+            @update:model-value="draft.minRepeatDays = $event ?? 0"
+          />
+          <v-switch
+            v-model="draft.prepNightBefore"
+            label="Prepared the night before"
+            color="primary"
+            inset
+            hide-details
+          />
+        </template>
       </template>
     </EditDialog>
   </v-card>

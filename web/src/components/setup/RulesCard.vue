@@ -9,10 +9,12 @@ import WeekdayChips from '@/components/WeekdayChips.vue'
 import EditDialog from './EditDialog.vue'
 import { KASHRUT_LABELS, kashrutLabel, shortWeekday } from '@/lib/labels'
 import { WEEKDAYS } from '@/lib/rotation'
-import { cleanSpecialDay, newSpecialDay, withRules } from '@/lib/household'
+import { cleanSpecialDay, newSpecialDay, plannedSlots, withRules } from '@/lib/household'
 import { useAppStore } from '@/stores/app'
 
 const app = useAppStore()
+// Hand-written slots are never planned, so rules can't name them.
+const slots = computed(() => plannedSlots(app.household.slots))
 const kashrutLabelId = useId()
 
 function setRules(rules: Partial<Rules>) {
@@ -37,7 +39,7 @@ const editingIndex = ref(-1)
 const draft = ref<SpecialDay | null>(null)
 
 function add() {
-  draft.value = newSpecialDay(app.household.rules?.mainSlotId || app.household.slots[0]?.id || '')
+  draft.value = newSpecialDay(app.household.rules?.mainSlotId || slots.value[0]?.id || '')
   editingIndex.value = -1
 }
 
@@ -76,7 +78,7 @@ const slotRequired = (v: string | null) => !!v || 'Pick a meal of the day'
       />
       <v-select
         v-model="mainSlotId"
-        :items="app.household.slots"
+        :items="slots"
         item-title="name"
         item-value="id"
         label="Main meal"
@@ -107,7 +109,7 @@ const slotRequired = (v: string | null) => !!v || 'Pick a meal of the day'
       <v-btn
         prepend-icon="mdi-plus"
         variant="tonal"
-        :disabled="app.household.slots.length === 0"
+        :disabled="slots.length === 0"
         data-test="add-special"
         @click="add"
       >
@@ -143,7 +145,7 @@ const slotRequired = (v: string | null) => !!v || 'Pick a meal of the day'
           <v-col cols="6">
             <v-select
               v-model="draft.slotId"
-              :items="app.household.slots"
+              :items="slots"
               item-title="name"
               item-value="id"
               label="Meal of the day"

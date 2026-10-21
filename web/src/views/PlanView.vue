@@ -8,6 +8,7 @@ import PlanDayCard from '@/components/plan/PlanDayCard.vue'
 import SwapDialog from '@/components/plan/SwapDialog.vue'
 import type { Conflict, View } from '@/core'
 import { PLAN_VIEWS, isView, slotsFor, weekOf } from '@/lib/plan'
+import { plannedSlots } from '@/lib/household'
 import { CYCLE_DAYS, weekDays } from '@/lib/rotation'
 import { useAppStore } from '@/stores/app'
 
@@ -30,11 +31,11 @@ const week = computed<0 | 1>({
 
 const hasMeals = computed(() => app.household.meals.length > 0)
 const hasPlan = computed(() => app.planWithAnswers.cells.some((c) => c.mealId))
-const viewSlots = computed(() => slotsFor(app.household.slots, view.value))
+const viewSlots = computed(() => slotsFor(plannedSlots(app.household.slots), view.value))
 
 const days = computed(() =>
   weekDays(week.value)
-    .map((day) => ({ day, slots: slotsFor(app.household.slots, view.value, day) }))
+    .map((day) => ({ day, slots: slotsFor(plannedSlots(app.household.slots), view.value, day) }))
     .filter((d) => d.slots.length > 0),
 )
 

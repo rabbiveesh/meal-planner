@@ -66,6 +66,11 @@ pub struct SlotDef {
     #[serde(default)]
     #[tsify(optional)]
     pub prep_night_before: bool,
+    /// Written by hand each day (e.g. one child's food): the planner never fills it with a
+    /// meal; the app only keeps her note for it.
+    #[serde(default)]
+    #[tsify(optional)]
+    pub hand_written: bool,
 }
 
 fn default_repeat() -> u8 {
@@ -263,9 +268,9 @@ impl Household {
             .iter()
             .find(|f| f.day == weekday && f.slot_id == slot_id)
     }
-    /// Whether a slot is planned on a rotation day.
-    pub fn slot_on_day(&self, slot: &SlotDef, day: u8) -> bool {
-        slot.days.contains(&(day % 7))
+    /// Whether the planner fills a slot on a rotation day. Hand-written slots never are.
+    pub fn planned_on(&self, slot: &SlotDef, day: u8) -> bool {
+        !slot.hand_written && slot.days.contains(&(day % 7))
     }
     /// How many adults and children eat a slot.
     pub fn headcount(&self, slot: &SlotDef) -> (usize, usize) {

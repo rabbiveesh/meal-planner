@@ -8,6 +8,7 @@ import ConfirmButton from '@/components/ConfirmButton.vue'
 import WeekdayChips from '@/components/WeekdayChips.vue'
 import IngredientRows from './IngredientRows.vue'
 import TextListField from './TextListField.vue'
+import { plannedSlots } from '@/lib/household'
 import { KASHRUT_LABELS, PREP_LABELS } from '@/lib/labels'
 import {
   cleanMeal,
@@ -52,7 +53,9 @@ const open = computed({
   },
 })
 
-const slotChoices = computed(() => app.household.slots.map((s) => ({ value: s.id, title: s.name })))
+const slotChoices = computed(() =>
+  plannedSlots(app.household.slots).map((s) => ({ value: s.id, title: s.name })),
+)
 /** The soft version only matters if someone needs soft food (or one was already entered). */
 const showSoft = computed(
   () => app.household.eaters.some((e) => e.softFood) || !!draft.value?.softVersion,

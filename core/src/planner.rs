@@ -81,7 +81,11 @@ fn is_fixed(h: &Household, weekday: u8, slot_id: &str, meal_id: &str) -> bool {
 }
 
 /// All meals that could go in a cell, best fits first. Powers the manual swap list.
+/// A hand-written slot has none: she writes it herself.
 pub fn options(h: &Household, plan: &Plan, day: u8, slot_id: &str) -> Vec<MealOption> {
+    if h.slot(slot_id).is_some_and(|s| s.hand_written) {
+        return Vec::new();
+    }
     let mut out: Vec<MealOption> = h
         .meals
         .iter()
@@ -127,7 +131,7 @@ pub fn generate(h: &Household, previous: &Plan, seed: u64) -> Plan {
 
     for day in 0..CYCLE_DAYS {
         for slot in &slots {
-            if !h.slot_on_day(slot, day) || plan.cell(day, &slot.id).is_some() {
+            if !h.planned_on(slot, day) || plan.cell(day, &slot.id).is_some() {
                 continue;
             }
             if let Some(id) = pick_fixed(h, &plan, day, &slot.id) {
@@ -143,7 +147,7 @@ pub fn generate(h: &Household, previous: &Plan, seed: u64) -> Plan {
 
     for day in 0..CYCLE_DAYS {
         for slot in &slots {
-            if !h.slot_on_day(slot, day) || plan.cell(day, &slot.id).is_some() {
+            if !h.planned_on(slot, day) || plan.cell(day, &slot.id).is_some() {
                 continue;
             }
             let mut cell = Cell {
@@ -288,7 +292,7 @@ mod tests {
         for seed in 0..20 {
             let plan = generate(&h, &Plan::default(), seed);
             for slot in &h.slots {
-                for day in (0..CYCLE_DAYS).filter(|&d| h.slot_on_day(slot, d)) {
+                for day in (0..CYCLE_DAYS).filter(|&d| h.planned_on(slot, d)) {
                     let c = plan.cell(day, &slot.id).unwrap();
                     let m = c.meal_id.as_deref().and_then(|id| h.meal(id));
                     let m = m.unwrap_or_else(|| panic!("seed {seed}: {} day {day}", slot.id));
@@ -464,6 +468,50 @@ mod tests {
             plan.cell(10, "main").unwrap().meal_id.as_deref(),
             Some("shawarma")
         );
+    }
+
+    fn with_hand_written(slot_id: &str) -> Household {
+        let mut h = household();
+        h.slots
+            .iter_mut()
+            .filter(|s| s.id == slot_id)
+            .for_each(|s| s.hand_written = true);
+        h
+    }
+
+    #[test]
+    fn hand_written_slot_is_never_planned() {
+        let h = with_hand_written("lunch");
+        for seed in 0..20 {
+            let plan = generate(&h, &Plan::default(), seed);
+            assert!(
+                plan.cells.iter().all(|c| c.slot_id != "lunch"),
+                "seed {seed}"
+            );
+            assert!(
+                plan.cells.iter().any(|c| c.slot_id == "main"),
+                "seed {seed}"
+            );
+        }
+    }
+
+    #[test]
+    fn hand_written_slot_stays_empty_even_with_an_every_week_meal() {
+        let mut h = with_hand_written("lunch");
+        h.rules.fixed_meals.push(FixedMeal {
+            day: 1,
+            slot_id: "lunch".into(),
+            meal_ids: vec!["salad".into()],
+        });
+        let plan = generate(&h, &Plan::default(), 4);
+        assert!(plan.cell(1, "lunch").is_none());
+    }
+
+    #[test]
+    fn hand_written_slot_has_no_options() {
+        let h = with_hand_written("lunch");
+        assert!(options(&h, &Plan::default(), 0, "lunch").is_empty());
+        assert!(!options(&h, &Plan::default(), 0, "main").is_empty());
     }
 
     #[test]

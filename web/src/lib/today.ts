@@ -4,6 +4,7 @@ import { addDays, format, isValid, parse, startOfDay } from 'date-fns'
 
 import type { Household, SlotDef, SpecialDay } from '@/core'
 import { getStorage } from '@/storage'
+import { plannedSlots } from './household'
 import { CYCLE_DAYS } from './rotation'
 
 const SHABBOS = 6
@@ -55,8 +56,10 @@ export interface WeekSpecial {
 export function specialsThisWeek(household: Household, today: number): WeekSpecial[] {
   const weekday = today % 7
   const sunday = weekday === SHABBOS ? nextDay(today) : today - weekday
+  // A hand-written slot has no backup meal to swap out, so there's nothing to ask.
+  const planned = plannedSlots(household.slots)
   return (household.rules?.specialDays ?? [])
-    .filter((s) => s.day !== SHABBOS && household.slots.some((slot) => slot.id === s.slotId))
+    .filter((s) => s.day !== SHABBOS && planned.some((slot) => slot.id === s.slotId))
     .map((special) => ({ day: (sunday + special.day) % CYCLE_DAYS, special }))
     .sort((a, b) => a.special.day - b.special.day)
 }
