@@ -7,10 +7,12 @@ import type { FixedMeal } from '@/core'
 import EditDialog from './EditDialog.vue'
 import { shortWeekday } from '@/lib/labels'
 import { WEEKDAYS } from '@/lib/rotation'
-import { cleanFixedMeal, newFixedMeal, withRules } from '@/lib/household'
+import { cleanFixedMeal, newFixedMeal, plannedSlots, withRules } from '@/lib/household'
 import { useAppStore } from '@/stores/app'
 
 const app = useAppStore()
+// Hand-written slots are never planned, so rules can't name them.
+const slots = computed(() => plannedSlots(app.household.slots))
 
 const fixedMeals = computed(() => app.household.rules?.fixedMeals ?? [])
 const slotName = (id: string) => app.household.slots.find((s) => s.id === id)?.name ?? '(removed)'
@@ -30,7 +32,7 @@ const editingIndex = ref(-1)
 const draft = ref<FixedMeal | null>(null)
 
 function add() {
-  draft.value = newFixedMeal(app.household.rules?.mainSlotId || app.household.slots[0]?.id || '')
+  draft.value = newFixedMeal(app.household.rules?.mainSlotId || slots.value[0]?.id || '')
   editingIndex.value = -1
 }
 
@@ -80,7 +82,7 @@ const mealsRequired = (v: string[] | null) => (v?.length ?? 0) > 0 || 'Pick at l
       <v-btn
         prepend-icon="mdi-plus"
         variant="tonal"
-        :disabled="app.household.slots.length === 0 || app.household.meals.length === 0"
+        :disabled="slots.length === 0 || app.household.meals.length === 0"
         @click="add"
       >
         Add every-week meal
@@ -103,7 +105,7 @@ const mealsRequired = (v: string[] | null) => (v?.length ?? 0) > 0 || 'Pick at l
           <v-col cols="6">
             <v-select
               v-model="draft.slotId"
-              :items="app.household.slots"
+              :items="slots"
               item-title="name"
               item-value="id"
               label="Meal of the day"

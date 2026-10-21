@@ -57,6 +57,23 @@ describe('SetupView', () => {
     expect(app.checkDay(0)).toEqual([])
   })
 
+  it('makes a meal of the day hand-written, which takes it out of the plan', async () => {
+    const { app, user } = await setup()
+    app.regenerate()
+    expect(app.data.plan.cells.some((c) => c.slotId === 'lunch')).toBe(true)
+
+    await user.click(screen.getByRole('listitem', { name: 'Our lunch' }))
+    const editor = await screen.findByRole('dialog', { name: 'Edit meal of the day' })
+    await user.click(within(editor).getByRole('checkbox', { name: 'Write it by hand each day' }))
+    expect(within(editor).queryByLabelText('Adults eat at')).not.toBeInTheDocument()
+    await user.click(within(editor).getByRole('button', { name: 'Save' }))
+
+    expect(app.household.slots.find((s) => s.id === 'lunch')?.handWritten).toBe(true)
+    expect(app.data.plan.cells.some((c) => c.slotId === 'lunch')).toBe(false)
+    app.regenerate()
+    expect(app.data.plan.cells.some((c) => c.slotId === 'lunch')).toBe(false)
+  })
+
   it('reorders meals of the day', async () => {
     const { app, user } = await setup()
     const [first, second] = app.household.slots

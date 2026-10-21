@@ -39,6 +39,11 @@ export function cleanEater(e: Eater): Eater {
   }
 }
 
+/** Slots the planner fills from the meal pool: all but the ones she writes by hand. */
+export function plannedSlots(slots: readonly SlotDef[]): SlotDef[] {
+  return slots.filter((s) => !s.handWritten)
+}
+
 /** Trims a slot; a blank time means that group doesn't eat it. */
 export function cleanSlot(s: SlotDef): SlotDef {
   return {
@@ -50,6 +55,7 @@ export function cleanSlot(s: SlotDef): SlotDef {
     days: [...new Set(s.days)].sort((a, b) => a - b),
     minRepeatDays: s.minRepeatDays ?? 0,
     prepNightBefore: !!s.prepNightBefore,
+    handWritten: !!s.handWritten,
   }
 }
 

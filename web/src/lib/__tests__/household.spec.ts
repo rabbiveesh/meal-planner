@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { Household } from '@/core'
 import {
   cleanSlot,
+  plannedSlots,
   mealsUsingSlot,
   move,
   planWithoutSlot,
@@ -71,6 +72,13 @@ describe('household editing', () => {
     })
     expect(s).toMatchObject({ name: 'Snack', childTime: '16:00', days: [1, 3] })
     expect(s.adultTime).toBeUndefined()
+  })
+
+  it('keeps hand-written slots out of the planned ones', () => {
+    const notes = cleanSlot({ id: 'n', name: 'Chedva', view: 'home', days: [0], handWritten: true })
+    expect(notes.handWritten).toBe(true)
+    const slots = [...household().slots, notes]
+    expect(plannedSlots(slots).map((s) => s.id)).toEqual(household().slots.map((s) => s.id))
   })
 
   it('merges rules', () => {

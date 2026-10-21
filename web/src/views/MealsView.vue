@@ -6,6 +6,7 @@ import type { Meal } from '@/core'
 import ChoiceChips, { type Choice } from '@/components/ChoiceChips.vue'
 import MealEditor from '@/components/meals/MealEditor.vue'
 import MealRow from '@/components/meals/MealRow.vue'
+import { plannedSlots } from '@/lib/household'
 import { filterMeals, groupBySlot, newMeal, type MealFilter } from '@/lib/meals'
 import { useAppStore } from '@/stores/app'
 
@@ -18,7 +19,7 @@ const query = ref('')
 const chip = ref<string | undefined>()
 
 const filterChoices = computed<Choice<string>[]>(() => [
-  ...app.household.slots.map((s) => ({ value: `slot:${s.id}`, title: s.name })),
+  ...plannedSlots(app.household.slots).map((s) => ({ value: `slot:${s.id}`, title: s.name })),
   { value: 'rescue', title: 'Rescue', icon: 'mdi-lifebuoy' },
   { value: 'fun', title: 'Fun', icon: 'mdi-party-popper' },
 ])

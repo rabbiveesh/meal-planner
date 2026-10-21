@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 import ChoiceChips, { type Choice } from '@/components/ChoiceChips.vue'
 import RescueOptionList from '@/components/rescue/RescueOptionList.vue'
 import type { Kashrut, MealOption, RescueAnswer } from '@/core'
+import { plannedSlots } from '@/lib/household'
 import { kashrutLabel } from '@/lib/labels'
 import { slotsOn, upcomingSlot } from '@/lib/today'
 import { useAppStore } from '@/stores/app'
@@ -15,7 +16,7 @@ const app = useAppStore()
 const router = useRouter()
 const ids = { slot: useId(), kashrut: useId(), question: useId(), options: useId() }
 
-const slots = computed(() => slotsOn(app.household, app.today))
+const slots = computed(() => plannedSlots(slotsOn(app.household, app.today)))
 const slotId = ref<string | undefined>()
 const kashrut = ref<KashrutChoice | undefined>()
 const answers = ref<RescueAnswer[]>([])
