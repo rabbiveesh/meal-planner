@@ -292,7 +292,7 @@ mod tests {
         for seed in 0..20 {
             let plan = generate(&h, &Plan::default(), seed);
             for slot in &h.slots {
-                for day in (0..CYCLE_DAYS).filter(|&d| h.slot_on_day(slot, d)) {
+                for day in (0..CYCLE_DAYS).filter(|&d| h.planned_on(slot, d)) {
                     let c = plan.cell(day, &slot.id).unwrap();
                     let m = c.meal_id.as_deref().and_then(|id| h.meal(id));
                     let m = m.unwrap_or_else(|| panic!("seed {seed}: {} day {day}", slot.id));
