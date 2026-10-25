@@ -38,28 +38,49 @@ describe('TodayView', () => {
     expect(screen.getByRole('link', { name: 'Rescue me' })).toHaveAttribute('href', '/rescue')
   })
 
-  it("answers this week's questions", async () => {
+  it("answers this week's questions, and each one leaves once answered", async () => {
     const store = await setupStore({ regenerate: true })
     const { app } = store
     const { user } = await mountRoute('/', store)
     const questions = within(screen.getByRole('region', { name: 'Questions this week' }))
-    const card = within(
-      questions.getByRole('group', {
-        name: 'Monday A Any Shabbos leftovers for your Monday lunch?',
-      }),
-    )
+    const monday = 'Monday A Any Shabbos leftovers for your Monday lunch?'
+    const card = within(questions.getByRole('group', { name: monday }))
     // Until she says yes, the backup meal stays on the plan.
     expect(card.getByText(/^Planned:/)).toHaveTextContent('backup')
 
     await user.click(card.getByRole('button', { name: 'Yes' }))
     expect(app.cell(1, 'lunch')?.specialActive).toBe(true)
-    expect(card.getByRole('button', { name: 'Yes' })).toBePressed()
-    expect(card.getByRole('button', { name: 'No' })).not.toBePressed()
-    expect(card.getByText(/^Planned:/)).toHaveTextContent('Shabbos leftovers')
+    await vi.waitFor(() =>
+      expect(questions.queryByRole('group', { name: monday })).not.toBeInTheDocument(),
+    )
+    expect(questions.getAllByRole('group')).toHaveLength(2)
 
-    await user.click(card.getByRole('button', { name: 'No' }))
-    expect(app.cell(1, 'lunch')?.specialActive).toBe(false)
-    expect(card.getByText(/^Planned:/)).toHaveTextContent('backup')
+    // A "no" counts as an answer too; once they're all answered the list is gone.
+    for (const group of questions.getAllByRole('group')) {
+      await user.click(within(group).getByRole('button', { name: 'No' }))
+    }
+    expect(app.cell(3, 'light')?.specialActive).toBe(false)
+    await vi.waitFor(() =>
+      expect(screen.queryByRole('region', { name: 'Questions this week' })).not.toBeInTheDocument(),
+    )
+  })
+
+  it("asks the coming week's questions once Shabbos is over", async () => {
+    vi.setSystemTime(new Date(2026, 9, 17, 21, 0)) // Saturday night
+    const store = await setupStore({ regenerate: true })
+    // Last week's questions were all answered.
+    store.app.data.specialAnswers = {
+      '2026-10-11|lunch': false,
+      '2026-10-12|lunch': true,
+      '2026-10-14|light': false,
+    }
+    await mountRoute('/', store)
+    const questions = within(screen.getByRole('region', { name: 'Questions this week' }))
+    expect(
+      questions.getByRole('group', {
+        name: 'Sunday B Any Shabbos leftovers for your Sunday lunch?',
+      }),
+    ).toBeInTheDocument()
   })
 
   it("lists tonight's prep for tomorrow and remembers ticks", async () => {
