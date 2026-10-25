@@ -152,6 +152,7 @@ pub fn household() -> Household {
                 label: "Shabbos leftovers".into(),
                 question: "Any Shabbos leftovers for Sunday?".into(),
                 kashrut: Kashrut::Meat,
+                meal_id: None,
             }],
             fixed_meals: vec![],
         },

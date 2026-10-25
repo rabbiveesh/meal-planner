@@ -211,6 +211,8 @@ fn pick(
     h.meals
         .iter()
         .filter(|m| m.slots.iter().any(|s| s == slot_id))
+        // A maybe-day's meal is only served when she says yes, never planned by itself.
+        .filter(|m| !h.is_maybe_meal(&m.id))
         // Kashrut is the one rule never broken to fill a cell.
         .filter(|m| day_conflicts(h, plan, day, Some((slot_id, m.kashrut))).is_empty())
         .map(|m| {
@@ -246,6 +248,21 @@ mod tests {
         assert!(plan.cells.iter().all(|c| c.day % 7 != 6));
         assert!(plan.cell(5, "main").is_none(), "no main meal on Friday");
         assert!(plan.cell(5, "lunch").is_some(), "Friday lunch is planned");
+    }
+
+    #[test]
+    fn maybe_day_meal_is_never_planned_by_itself() {
+        let mut h = household();
+        h.rules.special_days[0].meal_id = Some("soup".into());
+        for seed in 0..20 {
+            let plan = generate(&h, &Plan::default(), seed);
+            assert!(
+                plan.cells
+                    .iter()
+                    .all(|c| c.meal_id.as_deref() != Some("soup")),
+                "seed {seed}"
+            );
+        }
     }
 
     #[test]

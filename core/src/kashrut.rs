@@ -18,7 +18,8 @@ pub struct Conflict {
 pub fn cell_kashrut(h: &Household, cell: &Cell) -> Option<Kashrut> {
     if cell.special_active {
         if let Some(s) = h.special(cell.day % 7, &cell.slot_id) {
-            return Some(s.kashrut);
+            let meal = s.meal_id.as_deref().and_then(|id| h.meal(id));
+            return Some(meal.map_or(s.kashrut, |m| m.kashrut));
         }
     }
     cell.meal_id
@@ -122,5 +123,17 @@ mod tests {
         let plan = plan_with(&[("main", "chicken")]);
         let c = day_conflicts(&h, &plan, 0, Some(("light", Kashrut::Dairy)));
         assert_eq!(c.len(), 1);
+    }
+
+    #[test]
+    fn maybe_day_serving_a_meal_has_that_meals_kashrut() {
+        let mut h = household();
+        let mut plan = plan_with(&[("main", "chicken"), ("light", "pancakes")]);
+        plan.cells[0].special_active = true;
+        // Shabbos leftovers are meat, so dairy after them is too soon for Shoshi...
+        assert_eq!(day_conflicts(&h, &plan, 0, None).len(), 1);
+        // ...but when the maybe-day serves a parve meal, there's nothing to wait for.
+        h.rules.special_days[0].meal_id = Some("omelettes".into());
+        assert!(day_conflicts(&h, &plan, 0, None).is_empty());
     }
 }
