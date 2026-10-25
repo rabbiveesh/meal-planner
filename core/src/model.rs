@@ -175,7 +175,14 @@ pub struct SpecialDay {
     pub slot_id: String,
     pub label: String,
     pub question: String,
+    /// What it serves when it happens. Ignored when `meal_id` names one of her meals.
     pub kashrut: Kashrut,
+    /// One of her meals that is served when it happens (e.g. "Chummus and toppings" left from
+    /// Shabbos). Such a meal is only ever on the menu when she says yes, so the planner never
+    /// picks it by itself.
+    #[serde(default)]
+    #[tsify(optional)]
+    pub meal_id: Option<String>,
 }
 
 /// A meal that is planned every week on the same day, e.g. soup every Sunday night.
@@ -260,6 +267,13 @@ impl Household {
             .special_days
             .iter()
             .find(|s| s.day == weekday && s.slot_id == slot_id)
+    }
+    /// Whether a maybe-day serves this meal, which keeps it off the menu until she says yes.
+    pub fn is_maybe_meal(&self, meal_id: &str) -> bool {
+        self.rules
+            .special_days
+            .iter()
+            .any(|s| s.meal_id.as_deref() == Some(meal_id))
     }
     /// The every-week meal rule for a weekday and slot, if any.
     pub fn fixed(&self, weekday: u8, slot_id: &str) -> Option<&FixedMeal> {

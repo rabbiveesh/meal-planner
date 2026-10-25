@@ -114,6 +114,15 @@ describe('household editing', () => {
     expect(next.rules?.specialDays).toHaveLength(1)
   })
 
+  it('keeps a maybe-day whose meal is removed, as a plain maybe-day', () => {
+    const h = household()
+    h.rules!.specialDays![0]!.mealId = 'm1'
+    const next = removeMeal(h, 'm1')
+    expect(next.rules?.specialDays).toEqual([
+      { day: 0, slotId: 'lunch', label: 'Leftovers', question: 'Any?', kashrut: 'meat' },
+    ])
+  })
+
   it('drops repeated meals from an every-week rule', () => {
     expect(cleanFixedMeal({ day: 1, slotId: 'main', mealIds: ['a', 'b', 'a'] }).mealIds).toEqual([
       'a',

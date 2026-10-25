@@ -60,7 +60,7 @@ export function cleanSlot(s: SlotDef): SlotDef {
 }
 
 export function cleanSpecialDay(s: SpecialDay): SpecialDay {
-  return { ...s, label: s.label.trim(), question: s.question.trim() }
+  return { ...s, label: s.label.trim(), question: s.question.trim(), mealId: s.mealId || undefined }
 }
 
 export function cleanFixedMeal(f: FixedMeal): FixedMeal {
@@ -121,7 +121,8 @@ export function removeSlot(h: Household, slotId: string): Household {
 
 /**
  * Removes a meal and its place in the every-week rules; a rule left with no meals goes too.
- * The plan's cells are the caller's to clear.
+ * A maybe-day that served it stays, as a plain maybe-day. The plan's cells are the caller's
+ * to clear.
  */
 export function removeMeal(h: Household, mealId: string): Household {
   const rules = h.rules ?? {}
@@ -133,6 +134,9 @@ export function removeMeal(h: Household, mealId: string): Household {
       fixedMeals: rules.fixedMeals
         ?.map((f) => ({ ...f, mealIds: f.mealIds.filter((id) => id !== mealId) }))
         .filter((f) => f.mealIds.length > 0),
+      specialDays: rules.specialDays?.map((s) =>
+        s.mealId === mealId ? { ...s, mealId: undefined } : s,
+      ),
     },
   }
 }

@@ -119,6 +119,42 @@ describe('SetupView', () => {
     expect(mondays.map((c) => c.mealId)).toEqual([risotto, soup])
   })
 
+  it('adds a maybe-day that serves one of her meals, which is then only planned on a yes', async () => {
+    const { app, user } = await setup()
+    await user.click(screen.getByRole('button', { name: 'Add maybe-day' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Add maybe-day' })
+    expect(within(dialog).getByRole('group', { name: "When it happens, it's" })).toBeInTheDocument()
+
+    await user.click(
+      within(dialog).getByRole('combobox', { name: 'Serves one of your meals (optional)' }),
+    )
+    await user.click(await screen.findByRole('option', { name: 'Risotto' }))
+    // The meal's own kashrut applies, and its name is a starting point for the maybe-day's.
+    expect(
+      within(dialog).queryByRole('group', { name: "When it happens, it's" }),
+    ).not.toBeInTheDocument()
+    expect(within(dialog).getByRole('textbox', { name: 'Name' })).toHaveValue('Risotto')
+    await user.type(
+      within(dialog).getByRole('textbox', { name: 'Question to ask' }),
+      'Any risotto left from Shabbos?',
+    )
+    await user.click(within(dialog).getByRole('button', { name: 'Save' }))
+
+    const risotto = app.household.meals.find((m) => m.name === 'Risotto')!
+    expect(app.household.rules?.specialDays?.slice(-1)[0]).toEqual({
+      day: 0,
+      slotId: 'main',
+      label: 'Risotto',
+      question: 'Any risotto left from Shabbos?',
+      kashrut: risotto.kashrut,
+      mealId: risotto.id,
+    })
+    expect(await screen.findByText(/Serves Risotto/)).toBeInTheDocument()
+
+    app.regenerate()
+    expect(app.data.plan.cells.some((c) => c.mealId === risotto.id)).toBe(false)
+  })
+
   it('only accepts a Sunday for the rotation start', async () => {
     const { app, user } = await setup()
     const input = screen.getByRole('textbox', { name: 'Week A starts on Sunday' })

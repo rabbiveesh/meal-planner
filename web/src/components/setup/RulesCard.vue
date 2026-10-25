@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Weekly rules: cook-fresh days, the main meal that must be made ahead on other days,
-// and recurring "maybe" days (Shabbos leftovers, Mom bringing supper).
+// and recurring "maybe" days (Shabbos leftovers, Mom bringing supper), which may serve one
+// of her meals (chummus and toppings from Shabbos) that is then only planned on a yes.
 import { computed, ref, toRaw, useId } from 'vue'
 
 import type { Rules, SpecialDay } from '@/core'
@@ -33,6 +34,24 @@ const mainSlotId = computed({
 
 const specialDays = computed(() => app.household.rules?.specialDays ?? [])
 const slotName = (id: string) => app.household.slots.find((s) => s.id === id)?.name ?? '(removed)'
+const mealItems = computed(() =>
+  [...app.household.meals].sort((a, b) => a.name.localeCompare(b.name)),
+)
+/** What a maybe-day serves: one of her meals, or its own kashrut. */
+function serves(s: SpecialDay): string {
+  const meal = app.meal(s.mealId)
+  return meal ? `Serves ${meal.name}` : kashrutLabel(s.kashrut).title
+}
+
+/** Links the draft to one of her meals; its name fills in the maybe-day's name if blank. */
+function pickMeal(mealId: string | null) {
+  if (!draft.value) return
+  const meal = app.meal(mealId ?? undefined)
+  draft.value.mealId = meal?.id
+  if (!meal) return
+  draft.value.kashrut = meal.kashrut
+  if (!draft.value.label.trim()) draft.value.label = meal.name
+}
 
 /** Index being edited; -1 for a new one. */
 const editingIndex = ref(-1)
@@ -98,7 +117,7 @@ const slotRequired = (v: string | null) => !!v || 'Pick a meal of the day'
         v-for="(s, i) in specialDays"
         :key="i"
         :title="`${shortWeekday(s.day)}: ${s.label}`"
-        :subtitle="`${slotName(s.slotId)} · ${kashrutLabel(s.kashrut).title} · “${s.question}”`"
+        :subtitle="`${slotName(s.slotId)} · ${serves(s)} · “${s.question}”`"
         lines="two"
         append-icon="mdi-pencil"
         data-test="special-day"
@@ -153,16 +172,30 @@ const slotRequired = (v: string | null) => !!v || 'Pick a meal of the day'
             />
           </v-col>
         </v-row>
-        <div :id="kashrutLabelId" class="text-subtitle-1">When it happens, it's</div>
-        <ChoiceChips
-          v-model="draft.kashrut"
-          :items="KASHRUT_LABELS"
-          :labelledby="kashrutLabelId"
-          size="large"
-          variant="outlined"
-          mandatory
-          column
+        <v-autocomplete
+          :model-value="draft.mealId ?? null"
+          :items="mealItems"
+          item-title="name"
+          item-value="id"
+          label="Serves one of your meals (optional)"
+          hint="That meal is only put on the menu when you answer yes."
+          persistent-hint
+          clearable
+          class="mb-4"
+          @update:model-value="pickMeal"
         />
+        <template v-if="!draft.mealId">
+          <div :id="kashrutLabelId" class="text-subtitle-1">When it happens, it's</div>
+          <ChoiceChips
+            v-model="draft.kashrut"
+            :items="KASHRUT_LABELS"
+            :labelledby="kashrutLabelId"
+            size="large"
+            variant="outlined"
+            mandatory
+            column
+          />
+        </template>
       </template>
     </EditDialog>
   </v-card>
