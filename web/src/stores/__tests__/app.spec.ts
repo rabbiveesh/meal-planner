@@ -71,6 +71,43 @@ describe('special-day answers', () => {
     }
   })
 
+  it('give way to a meal she picks by hand, for that date only', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 9, 12, 9)) // Monday, week A
+    try {
+      const { app } = await setupStore()
+      app.setRotationStart('2026-10-11')
+      app.regenerate()
+      const meal = app.mealOptions(1, 'lunch')[0]!
+      app.setSpecialActive(1, 'lunch', true)
+
+      app.setCell(1, 'lunch', meal.mealId)
+      expect(app.cell(1, 'lunch')).toMatchObject({ mealId: meal.mealId, specialActive: false })
+      expect(app.prepFor(1).items.some((i) => i.mealId === meal.mealId)).toBe(true)
+      // Answered, so the weekly question doesn't come back; she can still switch it on again.
+      expect(app.specialAnswer(1, 'lunch')).toBe(false)
+      app.setSpecialActive(1, 'lunch', true)
+      expect(app.cell(1, 'lunch')?.specialActive).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('stay on when she only clears the backup meal', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(2026, 9, 12, 9))
+    try {
+      const { app } = await setupStore()
+      app.setRotationStart('2026-10-11')
+      app.regenerate()
+      app.setSpecialActive(1, 'lunch', true)
+      app.setCell(1, 'lunch', null)
+      expect(app.cell(1, 'lunch')?.specialActive).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('on Shabbos, cover the coming week', async () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date(2026, 9, 24, 12)) // Shabbos B

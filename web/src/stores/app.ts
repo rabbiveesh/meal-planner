@@ -124,8 +124,15 @@ export const useAppStore = defineStore('app', () => {
     data.value.plan = core.generatePlan(plain(household.value), plain(data.value.plan), seed)
   }
 
-  /** Puts a meal in a cell by hand. Hand-picked cells are locked so regeneration keeps them. */
+  /**
+   * Puts a meal in a cell by hand. Hand-picked cells are locked so regeneration keeps them.
+   * Picking a meal always wins: if the cell's special day (e.g. Shabbos leftovers) is on for
+   * this cycle, it is turned off, so the meal she picked is what gets served.
+   */
   function setCell(day: number, slotId: string, mealId: string | null) {
+    if (mealId != null && specialAnswer(day, slotId) === true) {
+      setSpecialActive(day, slotId, false)
+    }
     const cells = data.value.plan.cells.filter((c) => !(c.day === day && c.slotId === slotId))
     cells.push({
       day,
