@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { MealOption, SlotDef } from '@/core'
 import {
   cellDisplay,
+  chartSlots,
   conflictsFor,
   groupOptions,
   isView,
@@ -88,5 +89,12 @@ describe('plan helpers', () => {
     // A stale flag with no matching special day falls back to the meal.
     expect(cellDisplay({ specialActive: true }, meal, undefined).title).toBe('Shawarma')
     expect(cellDisplay(undefined, undefined, undefined).title).toBeNull()
+  })
+
+  it('picks chart columns in household order, defaulting to a view', () => {
+    const slots = [slot('a', 'home', [0]), slot('b', 'takeAlong', [0]), slot('c', 'home', [5])]
+    expect(chartSlots(slots, null, 'home').map((s) => s.id)).toEqual(['a', 'c'])
+    expect(chartSlots(slots, ['c', 'b', 'gone'], 'home').map((s) => s.id)).toEqual(['b', 'c'])
+    expect(chartSlots(slots, [], 'home')).toEqual([])
   })
 })

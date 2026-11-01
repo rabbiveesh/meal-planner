@@ -3,7 +3,7 @@ import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-rou
 export const routes: RouteRecordRaw[] = [
   { path: '/', name: 'today', component: () => import('@/views/TodayView.vue') },
   { path: '/plan', name: 'plan', component: () => import('@/views/PlanView.vue') },
-  { path: '/print/:view', name: 'print', component: () => import('@/views/PrintView.vue') },
+  { path: '/chart', name: 'chart', component: () => import('@/views/ChartView.vue') },
   { path: '/rescue', name: 'rescue', component: () => import('@/views/RescueView.vue') },
   { path: '/shopping', name: 'shopping', component: () => import('@/views/ShoppingView.vue') },
   { path: '/meals', name: 'meals', component: () => import('@/views/MealsView.vue') },

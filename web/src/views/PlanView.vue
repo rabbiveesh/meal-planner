@@ -33,6 +33,17 @@ const hasMeals = computed(() => app.household.meals.length > 0)
 const hasPlan = computed(() => app.planWithAnswers.cells.some((c) => c.mealId))
 const viewSlots = computed(() => slotsFor(plannedSlots(app.household.slots), view.value))
 
+// The printable chart opens on the week shown, with this tab's meals of the day as columns.
+const chartLink = computed(() => ({
+  name: 'chart',
+  query: {
+    week: week.value ? 'B' : 'A',
+    slots: slotsFor(app.household.slots, view.value)
+      .map((s) => s.id)
+      .join(','),
+  },
+}))
+
 const days = computed(() =>
   weekDays(week.value)
     .map((day) => ({ day, slots: slotsFor(plannedSlots(app.household.slots), view.value, day) }))
@@ -80,9 +91,6 @@ function regenerate() {
         <h1 class="text-h5 mr-auto">Two-week plan</h1>
         <v-btn color="primary" prepend-icon="mdi-autorenew" @click="confirmRegenerate = true">
           Make a new plan
-        </v-btn>
-        <v-btn variant="tonal" prepend-icon="mdi-printer" :to="{ name: 'print', params: { view } }">
-          Print
         </v-btn>
       </div>
 
@@ -134,6 +142,18 @@ function regenerate() {
           @pick="openSwap(d.day, $event)"
         />
       </div>
+
+      <v-btn
+        block
+        size="x-large"
+        variant="tonal"
+        color="primary"
+        prepend-icon="mdi-printer"
+        class="mt-6"
+        :to="chartLink"
+      >
+        Generate chart
+      </v-btn>
     </template>
 
     <SwapDialog v-if="swap" v-model="swapOpen" :day="swap.day" :slot-id="swap.slotId" />
