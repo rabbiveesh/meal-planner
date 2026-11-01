@@ -14,8 +14,9 @@
 
   "compilerOptions": {
     // Vitest runs in a different environment than the application code.
-    // Adjust lib and types accordingly.
-    "lib": [],
+    // Adjust lib and types accordingly. Node 22+ has every ES2022 built-in the app code uses
+    // (Array.prototype.at, Intl.DateTimeFormat#formatRange), so tests see the same lib as the app.
+    "lib": ["ES2022"],
     "types": ["node", "jsdom", "@testing-library/jest-dom/vitest"],
 
     // `vue-tsc --build` produces a .tsbuildinfo file for incremental type-checking.

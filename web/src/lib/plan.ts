@@ -27,6 +27,18 @@ export function slotsFor(slots: readonly SlotDef[], view: View, day?: number): S
   return slots.filter((s) => s.view === view && (day == null || s.days.includes(day % 7)))
 }
 
+/**
+ * Columns of the printable week chart, always in household order. `picked` is the slot ids
+ * she chose (unknown ids are ignored); with no choice yet, it's the slots of `view`.
+ */
+export function chartSlots(
+  slots: readonly SlotDef[],
+  picked: readonly string[] | null,
+  view: View,
+): SlotDef[] {
+  return picked ? slots.filter((s) => picked.includes(s.id)) : slotsFor(slots, view)
+}
+
 /** Kashrut problems that belong to one cell. */
 export function conflictsFor(conflicts: readonly Conflict[], slotId: string): Conflict[] {
   return conflicts.filter((c) => c.slotId === slotId)

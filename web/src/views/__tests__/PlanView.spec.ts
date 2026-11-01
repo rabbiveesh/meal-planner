@@ -127,50 +127,101 @@ describe('PlanView', () => {
     expect(app.cell(3, 'main')?.mealId).toBe('risotto')
   })
 
-  it('opens the printable chart for the current tab', async () => {
-    const { router, user } = await mountRoute('/plan?view=breakfast')
-    await user.click(screen.getByRole('link', { name: 'Print' }))
-    await vi.waitFor(() => expect(router.currentRoute.value.fullPath).toBe('/print/breakfast'))
+  it('generates the chart for the week and tab shown, from a button at the bottom', async () => {
+    const { router, user } = await mountRoute('/plan?view=takeAlong&week=B')
+    const button = screen.getByRole('link', { name: 'Generate chart' })
+    // Below every day of the week.
+    expect(
+      dayCard('Friday B').compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
+    await user.click(button)
+    await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('chart'))
+    expect(router.currentRoute.value.query).toEqual({ week: 'B', slots: 'takeAlong,lunch' })
   })
 })
 
-describe('PrintView', () => {
-  it('prints one table per week with the view’s slots as columns', async () => {
+describe('ChartView', () => {
+  beforeEach(() => {
+    // Monday of week A in the starter template's rotation.
+    vi.useFakeTimers({ now: new Date(2026, 9, 12, 9, 0), toFake: ['Date'] })
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  const columns = () => screen.getAllByRole('columnheader').map((t) => t.textContent?.trim())
+
+  it('lays out one week like the paper chart: days down, meals across', async () => {
     const store = await setupStore({ regenerate: true })
     const { app } = store
-    await mountRoute('/print/takeAlong', store)
-    expect(screen.getByRole('heading', { name: 'Take-along · Week A' })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: 'Take-along · Week B' })).toBeInTheDocument()
-    expect(screen.getAllByText('Rotation started Sunday 11 October 2026')).toHaveLength(2)
-    const tables = screen.getAllByRole('table')
-    expect(tables).toHaveLength(2)
-    expect(
-      within(tables[0]!)
-        .getAllByRole('columnheader')
-        .map((t) => t.textContent?.trim()),
-    ).toEqual(['', "Kids' take-along", 'Our lunch'])
-    const body = within(tables[1]!).getAllByRole('rowgroup')[1]!
-    expect(within(body).getAllByRole('row')).toHaveLength(6)
-    expect(tables[1]).toHaveTextContent(app.meal(app.cell(9, 'lunch')?.mealId)!.name)
+    await mountRoute('/chart?week=B&slots=main,light', store)
+    expect(screen.getByRole('heading', { name: 'Meal plan' })).toBeInTheDocument()
+    // Intl puts thin spaces round the dash; Testing Library reads them as plain spaces.
+    expect(screen.getByText('Week B · 18 – 23 October')).toBeInTheDocument()
+    expect(screen.getAllByRole('table')).toHaveLength(1)
+    expect(columns()).toEqual(['Day', 'Main meal', "Kids' light meal"])
+
+    const rows = within(screen.getAllByRole('rowgroup')[1]!).getAllByRole('row')
+    expect(rows.map((r) => within(r).getByRole('rowheader').textContent)).toEqual([
+      'Sunday18 Oct',
+      'Monday19 Oct',
+      'Tuesday20 Oct',
+      'Wednesday21 Oct',
+      'Thursday22 Oct',
+      'Friday23 Oct',
+    ])
+    expect(rows[2]).toHaveTextContent(app.meal(app.cell(9, 'main')?.mealId)!.name)
+  })
+
+  it('opens on this week with the at-home meals when nothing is picked', async () => {
+    await mountRoute('/chart')
+    expect(screen.getByText('Week A · 11 – 16 October')).toBeInTheDocument()
+    expect(columns()).toEqual(['Day', 'Main meal', "Kids' light meal", 'Friday lunch'])
+  })
+
+  it('lets her pick the columns and the week', async () => {
+    const { router, user } = await mountRoute('/chart?week=A&slots=main')
+    await user.click(screen.getByRole('button', { name: 'Week B' }))
+    await vi.waitFor(() => expect(router.currentRoute.value.query.week).toBe('B'))
+
+    await user.click(screen.getByText('Our lunch'))
+    await vi.waitFor(() => expect(router.currentRoute.value.query.slots).toBe('main,lunch'))
+    // Household order, whatever order she taps them in.
+    expect(columns()).toEqual(['Day', 'Our lunch', 'Main meal'])
+
+    await user.click(screen.getByText('Our lunch', { selector: '.v-chip *' }))
+    await user.click(screen.getByText('Main meal', { selector: '.v-chip *' }))
+    await vi.waitFor(() => expect(router.currentRoute.value.query.slots).toBe(''))
+    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+    expect(screen.getByText('Pick at least one meal of the day to put on the chart.')).toBeVisible()
+  })
+
+  it('shows her notes, and an unanswered special day as an alternative', async () => {
+    const store = await setupStore({ regenerate: true })
+    const { app } = store
+    app.setNote(app.dateOf(1), 'main', 'Double batch for Tuesday')
+    await mountRoute('/chart?week=A&slots=lunch,main', store)
+    const rows = within(screen.getAllByRole('rowgroup')[1]!).getAllByRole('row')
+    expect(rows[1]).toHaveTextContent('Double batch for Tuesday')
+    // The starter asks about Shabbos leftovers for Sunday's lunch.
+    expect(rows[0]).toHaveTextContent('or Shabbos leftovers?')
+    app.setSpecialActive(0, 'lunch', false)
+    await flushPromises()
+    expect(rows[0]).not.toHaveTextContent('or Shabbos leftovers?')
   })
 
   it('prints with the browser and goes back to the plan', async () => {
-    const { router, user } = await mountRoute('/print/home')
+    const { router, user } = await mountRoute('/chart?week=B')
     const print = vi.spyOn(window, 'print').mockImplementation(() => {})
     const printButton = screen.getByRole('button', { name: 'Print' })
     await user.click(printButton)
     expect(print).toHaveBeenCalledOnce()
-    // The buttons themselves stay off the paper.
+    // The controls themselves stay off the paper.
     expect(printButton.closest('.no-print')).not.toBeNull()
+    expect(screen.getByText('Columns on the chart').closest('.no-print')).not.toBeNull()
 
     await user.click(screen.getByRole('button', { name: 'Back' }))
     await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('plan'))
-    expect(router.currentRoute.value.query.view).toBe('home')
-  })
-
-  it('says so for an unknown chart', async () => {
-    await mountRoute('/print/lunchbox')
-    expect(screen.getByText('There is no chart with that name.')).toBeInTheDocument()
-    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+    expect(router.currentRoute.value.query.week).toBe('B')
   })
 })
