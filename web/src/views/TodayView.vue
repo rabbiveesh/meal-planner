@@ -7,6 +7,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { addDays, format, isSameDay } from 'date-fns'
 
 import SwapDialog from '@/components/plan/SwapDialog.vue'
+import DayBanner from '@/components/days/DayBanner.vue'
 import FirstRunCard from '@/components/today/FirstRunCard.vue'
 import PrepChecklist from '@/components/today/PrepChecklist.vue'
 import TodayMeals from '@/components/today/TodayMeals.vue'
@@ -68,16 +69,28 @@ if (snackbar.value) {
 <template>
   <FirstRunCard v-if="firstRun" />
   <div v-else v-touch="swipe" class="today">
-    <header class="d-flex align-center ga-2 mb-4">
-      <v-btn icon="mdi-chevron-left" variant="tonal" aria-label="Previous day" @click="turn(-1)" />
+    <DayBanner tag="header" class="d-flex align-center ga-1 mb-4 pa-1 rounded-lg elevation-2">
+      <v-btn
+        icon="mdi-chevron-left"
+        variant="text"
+        size="default"
+        aria-label="Previous day"
+        @click="turn(-1)"
+      />
       <div class="flex-grow-1 text-center">
-        <h1 class="text-h5">{{ format(date, 'EEEE, d MMMM') }}</h1>
-        <div class="text-body-1 text-medium-emphasis">
+        <h1 class="text-title-large">{{ format(date, 'EEEE, d MMMM') }}</h1>
+        <div class="text-body-2">
           {{ subtitle }}
         </div>
       </div>
-      <v-btn icon="mdi-chevron-right" variant="tonal" aria-label="Next day" @click="turn(1)" />
-    </header>
+      <v-btn
+        icon="mdi-chevron-right"
+        variant="text"
+        size="default"
+        aria-label="Next day"
+        @click="turn(1)"
+      />
+    </DayBanner>
 
     <v-btn
       v-if="!isHome"
