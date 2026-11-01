@@ -2,6 +2,7 @@
 // One day of one chart: a big tappable row per slot. Tapping a row asks the parent to swap it.
 import { computed, useId } from 'vue'
 
+import DayBanner from '@/components/days/DayBanner.vue'
 import type { Conflict, SlotDef } from '@/core'
 import { cellDisplay, conflictsFor } from '@/lib/plan'
 import { dayLabel } from '@/lib/rotation'
@@ -42,11 +43,14 @@ const rows = computed(() =>
     :aria-labelledby="titleId"
     :color="isToday ? 'primary' : undefined"
     :variant="isToday ? 'outlined' : 'elevated'"
+    class="day-card"
   >
-    <v-card-title class="d-flex align-center text-h6">
+    <DayBanner class="v-card-title d-flex align-center">
       <span :id="titleId">{{ dayLabel(day) }}</span>
-      <v-chip v-if="isToday" class="ml-2" color="primary" size="small" label>Today</v-chip>
-    </v-card-title>
+      <v-chip v-if="isToday" class="ml-2" color="surface" variant="flat" size="small" label>
+        Today
+      </v-chip>
+    </DayBanner>
 
     <v-list class="py-0" bg-color="transparent">
       <template v-for="(row, i) in rows" :key="row.slot.id">
@@ -126,3 +130,11 @@ const rows = computed(() =>
     </v-list>
   </v-card>
 </template>
+
+<style scoped>
+/* Cards hide their overflow, which would stop the day banner from sticking; clip keeps the
+   rounded corners without that. */
+.day-card {
+  overflow: clip;
+}
+</style>
