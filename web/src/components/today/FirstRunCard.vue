@@ -23,8 +23,8 @@ async function useStarter() {
 
 <template>
   <v-card class="mb-4" variant="tonal" color="primary">
-    <v-card-title class="text-h5 text-wrap">Welcome!</v-card-title>
-    <v-card-text class="text-body-1">
+    <v-card-title class="text-headline-small text-wrap">Welcome!</v-card-title>
+    <v-card-text class="text-body-large">
       <p class="mb-3">
         Let's get your meal plan going. You can start from a ready-made example household with some
         everyday meals, or start with a blank slate and enter everything yourself.

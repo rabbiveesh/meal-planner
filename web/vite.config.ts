@@ -18,7 +18,8 @@ export default defineConfig({
     vuetify({ autoImport: true }),
     wasm(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // Ask before switching to a new deploy (AppUpdate.vue shows the prompt).
+      registerType: 'prompt',
       includeAssets: ['favicon.svg'],
       manifest: {
         name: 'Meal Planner',

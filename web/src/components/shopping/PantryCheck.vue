@@ -47,7 +47,7 @@ function step(by: number) {
 
     <template v-else>
       <div class="d-flex align-center flex-wrap ga-3 mb-2">
-        <div class="text-h6">{{ shopping.checkedCount }} of {{ total }} checked</div>
+        <div class="text-title-large">{{ shopping.checkedCount }} of {{ total }} checked</div>
         <v-spacer />
         <v-btn-toggle v-model="mode" mandatory divided variant="outlined" density="comfortable">
           <v-btn value="one" prepend-icon="mdi-card-outline">One at a time</v-btn>
@@ -70,7 +70,9 @@ function step(by: number) {
       </v-alert>
 
       <template v-if="mode === 'one' && current">
-        <div class="text-body-1 text-medium-emphasis mb-2">Item {{ index + 1 }} of {{ total }}</div>
+        <div class="text-body-large text-medium-emphasis mb-2">
+          Item {{ index + 1 }} of {{ total }}
+        </div>
         <PantryItem :item="current" :mark="shopping.marks[current.key]" large @mark="markCurrent" />
         <div class="d-flex justify-space-between mt-3">
           <v-btn variant="text" prepend-icon="mdi-chevron-left" @click="step(-1)">Back</v-btn>
@@ -80,7 +82,7 @@ function step(by: number) {
 
       <template v-else-if="mode === 'list'">
         <section v-for="group in shopping.groups" :key="group.category" class="mb-4">
-          <h2 class="text-h6 font-weight-bold mb-2">{{ group.category }}</h2>
+          <h2 class="text-title-large font-weight-bold mb-2">{{ group.category }}</h2>
           <PantryItem
             v-for="item in group.items"
             :key="item.key"

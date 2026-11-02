@@ -29,7 +29,7 @@ onMounted(() => {
 
 <template>
   <div v-if="showing" class="welcome no-print" role="status" @animationend="showing = false">
-    <span class="welcome-text text-h5 font-weight-bold">
+    <span class="welcome-text text-headline-small font-weight-bold">
       <v-icon icon="mdi-star-four-points" class="mr-2" />{{ message }}
     </span>
   </div>

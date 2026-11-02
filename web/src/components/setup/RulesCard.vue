@@ -157,7 +157,7 @@ const slotRequired = (v: string | null) => !!v || 'Pick a meal of the day'
           placeholder="e.g. Is Mom bringing supper on Wednesday?"
           :rules="[required]"
         />
-        <v-row dense>
+        <v-row density="compact">
           <v-col cols="6">
             <v-select v-model="draft.day" :items="weekdayItems" label="Day" />
           </v-col>
@@ -185,7 +185,7 @@ const slotRequired = (v: string | null) => !!v || 'Pick a meal of the day'
           @update:model-value="pickMeal"
         />
         <template v-if="!draft.mealId">
-          <div :id="kashrutLabelId" class="text-subtitle-1">When it happens, it's</div>
+          <div :id="kashrutLabelId" class="text-body-large">When it happens, it's</div>
           <ChoiceChips
             v-model="draft.kashrut"
             :items="KASHRUT_LABELS"

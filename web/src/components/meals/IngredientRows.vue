@@ -28,7 +28,7 @@ function set<K extends keyof Ingredient>(i: number, key: K, value: Ingredient[K]
 
 <template>
   <div class="mb-4">
-    <div class="text-subtitle-1 mb-1">Ingredients</div>
+    <div class="text-body-large mb-1">Ingredients</div>
     <v-sheet
       v-for="(ing, i) in model"
       :key="i"
@@ -53,7 +53,7 @@ function set<K extends keyof Ingredient>(i: number, key: K, value: Ingredient[K]
           @click="remove(i)"
         />
       </div>
-      <v-row dense class="mt-1">
+      <v-row density="compact" class="mt-1">
         <v-col cols="6" sm="3">
           <v-number-input
             :model-value="ing.perAdult ?? null"

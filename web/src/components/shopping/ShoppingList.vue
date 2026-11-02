@@ -16,12 +16,12 @@ const shopping = useShoppingStore()
     />
 
     <template v-else>
-      <div class="text-h6 mb-2">
+      <div class="text-title-large mb-2">
         {{ shopping.boughtCount }} of {{ shopping.toBuy.length }} in the cart
       </div>
 
       <section v-for="group in shopping.toBuyGroups" :key="group.category" class="mb-4">
-        <h2 class="text-h5 font-weight-bold mb-1">{{ group.category }}</h2>
+        <h2 class="text-headline-small font-weight-bold mb-1">{{ group.category }}</h2>
         <v-list class="py-0">
           <v-list-item
             v-for="item in group.items"
@@ -40,14 +40,14 @@ const shopping = useShoppingStore()
               />
             </template>
             <v-list-item-title
-              class="text-h6 text-wrap"
+              class="text-title-large text-wrap"
               :class="{
                 'text-decoration-line-through text-medium-emphasis': shopping.isBought(item),
               }"
             >
               {{ item.name }}
             </v-list-item-title>
-            <v-list-item-subtitle v-if="formatNeed(item)" class="text-body-1">
+            <v-list-item-subtitle v-if="formatNeed(item)" class="text-body-large">
               {{ formatNeed(item) }}
             </v-list-item-subtitle>
           </v-list-item>

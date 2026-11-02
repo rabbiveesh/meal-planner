@@ -25,7 +25,7 @@ const nameId = useId()
       :aria-labelledby="`${nameId}-${i}`"
       class="mb-3"
     >
-      <v-card-title class="text-h6 text-wrap d-flex align-center ga-2">
+      <v-card-title class="text-title-large text-wrap d-flex align-center ga-2">
         <span :id="`${nameId}-${i}`">{{ option.name }}</span>
         <v-chip v-if="i < ready" color="success" size="small" prepend-icon="mdi-check">
           Ready

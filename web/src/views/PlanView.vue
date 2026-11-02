@@ -88,14 +88,14 @@ function regenerate() {
 
     <template v-else>
       <div class="d-flex flex-wrap align-center ga-2 mb-3">
-        <h1 class="text-h5 mr-auto">Two-week plan</h1>
+        <h1 class="text-headline-small mr-auto">Two-week plan</h1>
         <v-btn color="primary" prepend-icon="mdi-autorenew" @click="confirmRegenerate = true">
           Make a new plan
         </v-btn>
       </div>
 
       <v-tabs v-model="view" grow color="primary" class="mb-3">
-        <v-tab v-for="v in PLAN_VIEWS" :key="v.id" :value="v.id" class="text-body-1">
+        <v-tab v-for="v in PLAN_VIEWS" :key="v.id" :value="v.id" class="text-body-large">
           {{ v.label }}
         </v-tab>
       </v-tabs>
@@ -163,7 +163,7 @@ function regenerate() {
         <template #title>
           <span :id="confirmTitleId">Make a new plan?</span>
         </template>
-        <v-card-text class="text-body-1">
+        <v-card-text class="text-body-large">
           This fills both weeks again with fresh picks from your meals. Meals you picked by hand
           (marked “Hand-picked”) stay where they are.
         </v-card-text>

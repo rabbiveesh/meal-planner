@@ -28,14 +28,14 @@ const rows = computed(() =>
 
 <template>
   <v-card v-if="rows.length === 0" class="mb-4" variant="tonal">
-    <v-card-text class="text-body-1">Nothing is planned for this day. Enjoy!</v-card-text>
+    <v-card-text class="text-body-large">Nothing is planned for this day. Enjoy!</v-card-text>
   </v-card>
   <v-card v-else class="mb-4">
     <v-list lines="three" class="py-0">
       <template v-for="(row, i) in rows" :key="row.slot.id">
         <v-divider v-if="i > 0" />
         <div v-if="row.slot.handWritten" class="px-4 py-3">
-          <div class="text-body-2 mb-1 text-medium-emphasis">{{ row.slot.name }}</div>
+          <div class="text-body-medium mb-1 text-medium-emphasis">{{ row.slot.name }}</div>
           <v-textarea
             :model-value="app.note(date, row.slot.id)"
             :aria-label="row.slot.name"
@@ -54,16 +54,16 @@ const rows = computed(() =>
             :aria-label="`${row.slot.name}: ${row.special?.label ?? row.meal?.name ?? 'Not planned yet'}. Tap to change.`"
             @click="emit('pick', row.slot.id)"
           >
-            <v-list-item-subtitle class="text-body-2 mb-1">{{
+            <v-list-item-subtitle class="text-body-medium mb-1">{{
               row.slot.name
             }}</v-list-item-subtitle>
-            <v-list-item-title class="text-h6 text-wrap">
+            <v-list-item-title class="text-title-large text-wrap">
               <template v-if="row.special">{{ row.special.label }}</template>
               <template v-else-if="row.meal">{{ row.meal.name }}</template>
               <span v-else class="text-medium-emphasis">Not planned yet</span>
             </v-list-item-title>
             <template v-if="row.meal && !row.special">
-              <div class="text-body-1 mt-1">
+              <div class="text-body-large mt-1">
                 <div v-if="row.meal.kidsVersion">Kids: {{ row.meal.kidsVersion }}</div>
                 <div v-if="row.meal.adultsVersion">Adults: {{ row.meal.adultsVersion }}</div>
                 <div v-if="row.meal.softVersion">Soft: {{ row.meal.softVersion }}</div>

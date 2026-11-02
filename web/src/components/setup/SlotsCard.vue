@@ -143,7 +143,7 @@ const someoneEats = () =>
           class="mb-4"
           data-test="hand-written"
         />
-        <div :id="viewLabelId" class="text-subtitle-1">Shown on chart</div>
+        <div :id="viewLabelId" class="text-body-large">Shown on chart</div>
         <ChoiceChips
           v-model="draft.view"
           :items="viewChoices"
@@ -161,7 +161,7 @@ const someoneEats = () =>
           class="mt-2"
         />
         <template v-else>
-          <v-row dense>
+          <v-row density="compact">
             <v-col cols="6">
               <v-text-field
                 v-model="draft.childTime"

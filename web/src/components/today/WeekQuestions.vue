@@ -32,7 +32,7 @@ const questions = computed(() =>
   <!-- The last card takes the heading with it. -->
   <Transition name="fly-off">
     <section v-if="questions.length" :aria-labelledby="headingId" class="questions mb-4">
-      <h2 :id="headingId" class="text-h6 mb-2">Questions this week</h2>
+      <h2 :id="headingId" class="text-title-large mb-2">Questions this week</h2>
       <TransitionGroup name="fly-off">
         <v-card
           v-for="q in questions"
@@ -44,7 +44,7 @@ const questions = computed(() =>
           <v-card-subtitle :id="`${cardId}-${q.key}-day`" class="pt-3">
             {{ dayLabel(q.day) }}
           </v-card-subtitle>
-          <v-card-text :id="`${cardId}-${q.key}-question`" class="text-body-1 pb-2">
+          <v-card-text :id="`${cardId}-${q.key}-question`" class="text-body-large pb-2">
             {{ q.special.question }}
           </v-card-text>
           <v-card-actions class="ga-2 px-4">
@@ -65,7 +65,7 @@ const questions = computed(() =>
               No
             </v-btn>
           </v-card-actions>
-          <v-card-text class="pt-0 text-body-1" data-test="answer">
+          <v-card-text class="pt-0 text-body-large" data-test="answer">
             <template v-if="q.backup">Planned: {{ q.backup }} (backup)</template>
             <template v-else>No backup meal planned yet</template>
           </v-card-text>

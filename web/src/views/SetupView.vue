@@ -13,7 +13,7 @@ import YouCard from '@/components/setup/YouCard.vue'
 
 <template>
   <div>
-    <h1 class="text-h5 mb-3">Setup</h1>
+    <h1 class="text-headline-small mb-3">Setup</h1>
     <YouCard />
     <EatersCard />
     <SlotsCard />

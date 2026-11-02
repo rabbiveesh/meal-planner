@@ -87,7 +87,7 @@ function remove(id: string) {
 <template>
   <div class="pb-16">
     <div class="d-flex align-center mb-2">
-      <h1 class="text-h5">Meals</h1>
+      <h1 class="text-headline-small">Meals</h1>
       <v-spacer />
       <span class="text-medium-emphasis">{{ app.household.meals.length }} meals</span>
     </div>
@@ -132,7 +132,7 @@ function remove(id: string) {
       <v-card-title class="d-flex align-center">
         <span :id="`${groupId}-${gi}`">{{ g.title }}</span>
         <v-spacer />
-        <span class="text-body-2 text-medium-emphasis">{{ g.meals.length }}</span>
+        <span class="text-body-medium text-medium-emphasis">{{ g.meals.length }}</span>
       </v-card-title>
       <v-list class="py-0">
         <template v-for="(m, i) in g.meals" :key="m.id">

@@ -45,9 +45,9 @@ function onImported({ added, skipped }: { added: number; skipped: number }) {
       text="Add the things you buy every trip, or paste your whole store list at once."
     />
 
-    <v-list v-else lines="one" class="text-h6">
+    <v-list v-else lines="one" class="text-title-large">
       <template v-for="group in groups" :key="group.category">
-        <v-list-subheader class="text-subtitle-1 font-weight-bold">
+        <v-list-subheader class="text-body-large font-weight-bold">
           {{ group.category }}
         </v-list-subheader>
         <v-list-item

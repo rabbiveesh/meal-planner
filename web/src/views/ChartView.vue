@@ -108,7 +108,7 @@ function print() {
         <v-btn :value="1" class="flex-grow-1">Week B</v-btn>
       </v-btn-toggle>
 
-      <div :id="columnsId" class="text-subtitle-1">Columns on the chart</div>
+      <div :id="columnsId" class="text-body-large">Columns on the chart</div>
       <v-chip-group
         v-model="picked"
         multiple

@@ -79,7 +79,7 @@ if (snackbar.value) {
       />
       <div class="flex-grow-1 text-center">
         <h1 class="text-title-large">{{ format(date, 'EEEE, d MMMM') }}</h1>
-        <div class="text-body-2">
+        <div class="text-body-medium">
           {{ subtitle }}
         </div>
       </div>

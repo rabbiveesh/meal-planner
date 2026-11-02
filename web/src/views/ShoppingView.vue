@@ -24,7 +24,7 @@ function startNewTrip() {
 <template>
   <div>
     <div class="d-flex align-center mb-2">
-      <h1 class="text-h5">Shopping</h1>
+      <h1 class="text-headline-small">Shopping</h1>
       <v-spacer />
       <v-btn variant="tonal" prepend-icon="mdi-refresh" @click="confirmOpen = true">
         New trip

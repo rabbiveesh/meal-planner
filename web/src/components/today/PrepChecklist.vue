@@ -34,9 +34,9 @@ function toggle(id: string, checked: boolean | null) {
 
 <template>
   <section class="mb-4">
-    <h2 class="text-h6 mb-2">Tonight's prep for tomorrow</h2>
+    <h2 class="text-title-large mb-2">Tonight's prep for tomorrow</h2>
     <v-card v-if="items.length === 0" variant="tonal">
-      <v-card-text class="text-body-1">Nothing to prep tonight.</v-card-text>
+      <v-card-text class="text-body-large">Nothing to prep tonight.</v-card-text>
     </v-card>
     <v-card v-else>
       <v-list class="py-0">
