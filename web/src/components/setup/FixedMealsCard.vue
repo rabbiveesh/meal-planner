@@ -98,7 +98,7 @@ const mealsRequired = (v: string[] | null) => (v?.length ?? 0) > 0 || 'Pick at l
       @remove="remove"
     >
       <template v-if="draft">
-        <v-row dense>
+        <v-row density="compact">
           <v-col cols="6">
             <v-select v-model="draft.day" :items="weekdayItems" label="Day" />
           </v-col>

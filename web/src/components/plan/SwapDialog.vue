@@ -52,13 +52,13 @@ function pick(mealId: string | null) {
         <v-btn icon="mdi-close" aria-label="Close" @click="open = false" />
         <v-toolbar-title :id="titleId">
           {{ slot?.name ?? slotId }}
-          <div class="text-body-2">{{ dayLabel(day) }}</div>
+          <div class="text-body-medium">{{ dayLabel(day) }}</div>
         </v-toolbar-title>
       </v-toolbar>
 
       <v-card-text class="pa-4">
-        <div class="text-body-2 text-medium-emphasis">Planned now</div>
-        <div class="text-h6 mb-2">{{ current?.name ?? 'Nothing yet' }}</div>
+        <div class="text-body-medium text-medium-emphasis">Planned now</div>
+        <div class="text-title-large mb-2">{{ current?.name ?? 'Nothing yet' }}</div>
 
         <v-switch
           v-if="current"
@@ -102,7 +102,7 @@ function pick(mealId: string | null) {
               @click="pick(o.mealId)"
             >
               <template #title
-                ><span class="text-h6">{{ o.name }}</span></template
+                ><span class="text-title-large">{{ o.name }}</span></template
               >
             </v-list-item>
           </template>
@@ -118,9 +118,11 @@ function pick(mealId: string | null) {
               @click="pick(o.mealId)"
             >
               <template #title
-                ><span class="text-h6">{{ o.name }}</span></template
+                ><span class="text-title-large">{{ o.name }}</span></template
               >
-              <div v-for="w in o.warnings" :key="w" class="text-body-2 text-warning">{{ w }}</div>
+              <div v-for="w in o.warnings" :key="w" class="text-body-medium text-warning">
+                {{ w }}
+              </div>
             </v-list-item>
           </template>
 

@@ -61,14 +61,14 @@ const rows = computed(() =>
           :aria-label="`${row.slot.name}: ${row.display.title ?? 'Pick a meal'}. Tap to change.`"
           @click="emit('pick', row.slot.id)"
         >
-          <div class="text-overline text-medium-emphasis" style="line-height: 1.5">
+          <div class="text-label-small text-medium-emphasis" style="line-height: 1.5">
             {{ row.slot.name }}
           </div>
 
-          <div v-if="row.display.title" class="text-h6 text-high-emphasis">
+          <div v-if="row.display.title" class="text-title-large text-high-emphasis">
             {{ row.display.title }}
           </div>
-          <div v-else class="text-h6 text-disabled">
+          <div v-else class="text-title-large text-disabled">
             <v-icon icon="mdi-plus-circle-outline" size="small" /> Pick a meal
           </div>
 
@@ -77,7 +77,7 @@ const rows = computed(() =>
           <s
             v-if="row.display.backup"
             role="deletion"
-            class="d-block text-body-2 text-medium-emphasis"
+            class="d-block text-body-medium text-medium-emphasis"
           >
             {{ row.display.backup }}
           </s>
@@ -85,7 +85,7 @@ const rows = computed(() =>
           <div
             v-for="v in row.display.versions"
             :key="v.label"
-            class="text-body-2 text-medium-emphasis"
+            class="text-body-medium text-medium-emphasis"
           >
             {{ v.label }}: {{ v.text }}
           </div>

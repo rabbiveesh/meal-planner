@@ -25,7 +25,7 @@ const items = computed(() => props.days.map((d) => ({ value: d, title: shortWeek
 
 <template>
   <div class="mb-2">
-    <div :id="labelId" class="text-subtitle-1">{{ label }}</div>
+    <div :id="labelId" class="text-body-large">{{ label }}</div>
     <ChoiceChips
       v-model="model"
       :items="items"
@@ -35,6 +35,6 @@ const items = computed(() => props.days.map((d) => ({ value: d, title: shortWeek
       column
       selected-class="text-primary"
     />
-    <div v-if="hint" class="text-caption text-medium-emphasis">{{ hint }}</div>
+    <div v-if="hint" class="text-body-small text-medium-emphasis">{{ hint }}</div>
   </div>
 </template>

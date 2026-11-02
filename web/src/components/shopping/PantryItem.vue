@@ -24,15 +24,15 @@ function choose(value: PantryMark) {
 <template>
   <v-card :variant="large ? 'elevated' : 'outlined'" :class="large ? 'pa-2' : 'mb-2'">
     <v-card-item>
-      <v-card-title :class="large ? 'text-h4 text-wrap' : 'text-h6 text-wrap'">
+      <v-card-title :class="large ? 'text-headline-large text-wrap' : 'text-title-large text-wrap'">
         {{ item.name }}
       </v-card-title>
-      <v-card-subtitle v-if="large" class="text-body-1">{{ item.category }}</v-card-subtitle>
+      <v-card-subtitle v-if="large" class="text-body-large">{{ item.category }}</v-card-subtitle>
     </v-card-item>
-    <v-card-text :class="large ? 'text-h6' : 'text-body-1'">
+    <v-card-text :class="large ? 'text-title-large' : 'text-body-large'">
       <div v-if="need">Need: {{ need }}</div>
       <div v-else>On your master list</div>
-      <div v-if="item.meals.length" class="text-medium-emphasis">
+      <div v-if="item.meals.length" class="text-body-large text-medium-emphasis">
         For: {{ item.meals.join(', ') }}
       </div>
     </v-card-text>

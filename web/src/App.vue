@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import AppUpdate from '@/components/app/AppUpdate.vue'
 import WelcomeBurst from '@/components/welcome/WelcomeBurst.vue'
 import { useAppStore } from '@/stores/app'
 
@@ -32,6 +33,7 @@ const tabs = [
       <div v-else class="d-flex justify-center pa-8"><v-progress-circular indeterminate /></div>
       <!-- Once per app open: App stays mounted while she moves between sections. -->
       <WelcomeBurst v-if="app.loaded" :name="app.data.userName" />
+      <AppUpdate />
     </v-main>
 
     <!-- Vuetify stacks `app` layout items in tree order, and views render inside

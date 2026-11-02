@@ -74,17 +74,17 @@ function use(option: MealOption) {
 
 <template>
   <div class="d-flex align-center mb-4">
-    <h1 class="text-h5 flex-grow-1">Rescue me</h1>
+    <h1 class="text-headline-small flex-grow-1">Rescue me</h1>
     <v-btn variant="text" prepend-icon="mdi-restart" @click="startOver">Start over</v-btn>
   </div>
 
   <v-card v-if="slots.length === 0" variant="tonal">
-    <v-card-text class="text-body-1">No meals are planned today.</v-card-text>
+    <v-card-text class="text-body-large">No meals are planned today.</v-card-text>
   </v-card>
 
   <template v-else>
     <section class="mb-4">
-      <h2 :id="ids.slot" class="text-h6 mb-2">Which meal?</h2>
+      <h2 :id="ids.slot" class="text-title-large mb-2">Which meal?</h2>
       <ChoiceChips
         v-model="slotId"
         :items="slotChoices"
@@ -97,7 +97,7 @@ function use(option: MealOption) {
     </section>
 
     <v-card v-if="!hasRescueMeals" variant="tonal" color="info">
-      <v-card-text class="text-body-1">
+      <v-card-text class="text-body-large">
         You don't have any rescue meals for {{ slotName }} yet. Rescue meals are quick meals you can
         always fall back on, like hot dogs or frozen fries. Mark some meals as rescue meals in Meals
         and they'll show up here.
@@ -109,7 +109,7 @@ function use(option: MealOption) {
 
     <template v-else-if="result">
       <section class="mb-4">
-        <h2 :id="ids.kashrut" class="text-h6 mb-2">Meat, dairy, or either?</h2>
+        <h2 :id="ids.kashrut" class="text-title-large mb-2">Meat, dairy, or either?</h2>
         <ChoiceChips
           v-model="kashrut"
           :items="kashrutChoices"
@@ -128,7 +128,7 @@ function use(option: MealOption) {
         color="primary"
         variant="tonal"
       >
-        <v-card-title :id="ids.question" class="text-h6 text-wrap">
+        <v-card-title :id="ids.question" class="text-title-large text-wrap">
           {{ result.nextQuestion }}
         </v-card-title>
         <v-card-actions class="ga-2 px-4 pb-4">
@@ -154,12 +154,12 @@ function use(option: MealOption) {
       </v-card>
 
       <section>
-        <h2 :id="ids.options" class="text-h6 mb-2">
+        <h2 :id="ids.options" class="text-title-large mb-2">
           <template v-if="result.options.length === 0">Nothing fits</template>
           <template v-else-if="result.ready"> {{ result.ready }} ready to go </template>
           <template v-else>Options</template>
         </h2>
-        <p v-if="result.options.length === 0" class="text-body-1">
+        <p v-if="result.options.length === 0" class="text-body-large">
           None of your rescue meals fit these answers. Try "Either" or start over.
         </p>
         <RescueOptionList

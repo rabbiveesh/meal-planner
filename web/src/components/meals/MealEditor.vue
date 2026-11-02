@@ -106,7 +106,7 @@ async function save() {
 
           <v-input :model-value="draft.slots" :rules="[slotsRule]" class="mb-2">
             <div class="w-100">
-              <div :id="ids.slots" class="text-subtitle-1">Meal slots it can fill</div>
+              <div :id="ids.slots" class="text-body-large">Meal slots it can fill</div>
               <ChoiceChips
                 v-model="draft.slots"
                 :items="slotChoices"
@@ -119,7 +119,7 @@ async function save() {
             </div>
           </v-input>
 
-          <div :id="ids.kashrut" class="text-subtitle-1">Meat, dairy or parve</div>
+          <div :id="ids.kashrut" class="text-body-large">Meat, dairy or parve</div>
           <ChoiceChips
             v-model="draft.kashrut"
             :items="KASHRUT_LABELS"
@@ -131,7 +131,7 @@ async function save() {
             class="mb-2"
           />
 
-          <div :id="ids.prep" class="text-subtitle-1">How it's made</div>
+          <div :id="ids.prep" class="text-body-large">How it's made</div>
           <ChoiceChips
             v-model="draft.prep"
             :items="PREP_LABELS"
@@ -205,7 +205,7 @@ async function save() {
             hide-details
           />
 
-          <div :id="ids.leftovers" class="text-subtitle-1 mt-2">Cook double: leftovers go to</div>
+          <div :id="ids.leftovers" class="text-body-large mt-2">Cook double: leftovers go to</div>
           <ChoiceChips
             v-model="draft.leftoversFor"
             :items="slotChoices"
@@ -215,7 +215,7 @@ async function save() {
             column
             selected-class="text-primary"
           />
-          <div class="text-caption text-medium-emphasis mb-4">
+          <div class="text-body-small text-medium-emphasis mb-4">
             The next day, these meals are filled with this meal's leftovers.
           </div>
 

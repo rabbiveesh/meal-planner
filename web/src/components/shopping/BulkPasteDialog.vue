@@ -45,7 +45,7 @@ function add() {
           autofocus
           placeholder="Dairy:&#10;Milk&#10;Cottage cheese&#10;Bakery:&#10;Pitas"
         />
-        <div class="text-body-1">
+        <div class="text-body-large">
           {{ parsed.length }} items in {{ categoryCount }}
           {{ categoryCount === 1 ? 'category' : 'categories' }}
         </div>

@@ -23,7 +23,7 @@ function set(i: number, value: string) {
 
 <template>
   <div class="mb-4">
-    <div class="text-subtitle-1 mb-1">{{ label }}</div>
+    <div class="text-body-large mb-1">{{ label }}</div>
     <v-text-field
       v-for="(line, i) in model"
       :key="i"
