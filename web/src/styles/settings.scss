@@ -2,23 +2,21 @@
 // Vuetify's MD3 defaults read too big on a phone; these sit between them and
 // the browser defaults the app showed before its classes took effect.
 // Only sizes change; each class keeps its default weight and line height.
+// Defaults: headline-large 2rem, headline-small 1.5rem, title-large 1.375rem,
+// body-large 1rem.
 @use 'vuetify/settings' with (
   $typography: (
     'headline-large': (
       'size': 1.75rem,
     ),
-    // default 2rem
     'headline-small': (
-        'size': 1.25rem,
-      ),
-    // default 1.5rem
+      'size': 1.25rem,
+    ),
     'title-large': (
-        'size': 1.125rem,
-      ),
-    // default 1.375rem
+      'size': 1.125rem,
+    ),
     'body-large': (
-        'size': 0.9375rem,
-      ),
-    // default 1rem
+      'size': 0.9375rem,
+    ),
   )
 );
