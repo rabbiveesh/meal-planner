@@ -53,6 +53,24 @@ describe('MealsView', () => {
     expect(app.household.meals).toHaveLength(before + 1)
   })
 
+  it('lets a new meal fill several slots', async () => {
+    const { app, user } = await setup()
+
+    await user.click(screen.getByRole('button', { name: 'Add meal' }))
+    const editor = await screen.findByRole('dialog', { name: 'New meal' })
+    await user.type(within(editor).getByRole('textbox', { name: 'Meal name' }), 'Shakshuka')
+    const slots = within(within(editor).getByRole('group', { name: 'Meal slots it can fill' }))
+    await user.click(slots.getByRole('button', { name: 'Main meal' }))
+    await user.click(slots.getByRole('button', { name: "Kids' light meal" }))
+    expect(slots.getByRole('button', { name: 'Main meal' })).toBePressed()
+    expect(slots.getByRole('button', { name: "Kids' light meal" })).toBePressed()
+    await user.click(within(editor).getByRole('button', { name: 'Save' }))
+
+    const added = app.household.meals.find((m) => m.name === 'Shakshuka')
+    const slotIds = (name: string) => app.household.slots.find((s) => s.name === name)!.id
+    expect(added?.slots).toEqual([slotIds('Main meal'), slotIds("Kids' light meal")])
+  })
+
   it('edits and deletes a meal, clearing it from the plan', async () => {
     const { app, user } = await setup()
     app.regenerate()

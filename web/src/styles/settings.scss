@@ -4,9 +4,21 @@
 // Only sizes change; each class keeps its default weight and line height.
 @use 'vuetify/settings' with (
   $typography: (
-    'headline-large': ('size': 1.75rem),   // default 2rem
-    'headline-small': ('size': 1.25rem),   // default 1.5rem
-    'title-large': ('size': 1.125rem),     // default 1.375rem
-    'body-large': ('size': 0.9375rem),     // default 1rem
+    'headline-large': (
+      'size': 1.75rem,
+    ),
+    // default 2rem
+    'headline-small': (
+        'size': 1.25rem,
+      ),
+    // default 1.5rem
+    'title-large': (
+        'size': 1.125rem,
+      ),
+    // default 1.375rem
+    'body-large': (
+        'size': 0.9375rem,
+      ),
+    // default 1rem
   )
 );
