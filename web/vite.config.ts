@@ -15,7 +15,8 @@ export default defineConfig({
   base,
   plugins: [
     vue(),
-    vuetify({ autoImport: true }),
+    // settings.scss holds the app's type scale.
+    vuetify({ autoImport: true, styles: { configFile: 'src/styles/settings.scss' } }),
     wasm(),
     VitePWA({
       // Ask before switching to a new deploy (AppUpdate.vue shows the prompt).
