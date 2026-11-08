@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { Household } from '@/core'
 import {
   cleanSlot,
+  copySlotMeals,
   plannedSlots,
   mealsUsingSlot,
   move,
@@ -49,6 +50,24 @@ const household = (): Household => ({
 })
 
 describe('household editing', () => {
+  it("copies one slot's meals into another, leftovers included", () => {
+    const h = copySlotMeals(
+      {
+        ...household(),
+        slots: [...household().slots, { id: 'c', name: 'C', view: 'takeAlong', days: [0] }],
+      },
+      'lunch',
+      'c',
+    )
+    expect(h.meals.map((m) => [m.slots, m.leftoversFor])).toEqual([
+      [['main', 'lunch', 'c'], undefined],
+      [['main'], ['lunch', 'c']],
+    ])
+    // Copying again adds nothing twice; a slot no meal uses copies nothing.
+    expect(copySlotMeals(h, 'lunch', 'c')).toEqual(h)
+    expect(copySlotMeals(household(), 'nobody', 'c')).toEqual(household())
+  })
+
   it('upserts by id', () => {
     const list = [{ id: 'a', n: 1 }]
     expect(upsert(list, { id: 'a', n: 2 })).toEqual([{ id: 'a', n: 2 }])

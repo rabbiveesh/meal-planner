@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // The meals of the day (slots): name, which chart, who eats when, days, repeat limit, or
-// written by hand each day instead of planned.
+// written by hand each day instead of planned. A planned slot can take on another slot's
+// meals in one go.
 import { computed, ref, toRaw, useId } from 'vue'
 
 import type { SlotDef } from '@/core'
@@ -9,30 +10,55 @@ import WeekdayChips from '@/components/WeekdayChips.vue'
 import EditDialog from './EditDialog.vue'
 import { PLAN_VIEWS, viewLabel } from '@/lib/plan'
 import { weekdayList } from '@/lib/labels'
-import { cleanSlot, mealsUsingSlot, move, newSlot } from '@/lib/household'
+import {
+  cleanSlot,
+  copySlotMeals,
+  mealsUsingSlot,
+  move,
+  newSlot,
+  plannedSlots,
+} from '@/lib/household'
 import { useAppStore } from '@/stores/app'
 
 const app = useAppStore()
 const viewLabelId = useId()
+const copyLabelId = useId()
 // Each row is named by its slot and described by its summary, at `${rowId}-<index>-...`.
 const rowId = useId()
 const viewChoices = PLAN_VIEWS.map((v) => ({ value: v.id, title: v.label }))
 const draft = ref<SlotDef | null>(null)
 const isNew = ref(false)
+/** Another slot whose meals this one should also offer, copied on save. */
+const copyFrom = ref<string | undefined>()
+
+/** The other planned slots, whose meals this one can take on. */
+const copyChoices = computed(() =>
+  plannedSlots(app.household.slots)
+    .filter((s) => s.id !== draft.value?.id)
+    .map((s) => ({ value: s.id, title: s.name })),
+)
+
+function startEditing(slot: SlotDef, fresh: boolean) {
+  draft.value = slot
+  isNew.value = fresh
+  copyFrom.value = undefined
+}
 
 function add() {
-  draft.value = newSlot()
-  isNew.value = true
+  startEditing(newSlot(), true)
 }
 
 function edit(s: SlotDef) {
-  draft.value = structuredClone(toRaw(s))
-  isNew.value = false
+  startEditing(structuredClone(toRaw(s)), false)
 }
 
 function save() {
   if (!draft.value) return
-  app.saveSlot(cleanSlot(draft.value))
+  const slot = cleanSlot(draft.value)
+  app.saveSlot(slot)
+  if (copyFrom.value && !slot.handWritten) {
+    app.setHousehold(copySlotMeals(toRaw(app.household), copyFrom.value, slot.id))
+  }
   draft.value = null
 }
 
@@ -200,6 +226,20 @@ const someoneEats = () =>
             inset
             hide-details
           />
+          <template v-if="copyChoices.length">
+            <div :id="copyLabelId" class="text-body-large mt-4">Use the same meals as</div>
+            <div class="text-body-medium text-medium-emphasis">
+              Every meal that can go in the one you pick can go in this one too.
+            </div>
+            <ChoiceChips
+              v-model="copyFrom"
+              :items="copyChoices"
+              :labelledby="copyLabelId"
+              size="large"
+              variant="outlined"
+              column
+            />
+          </template>
         </template>
       </template>
     </EditDialog>
