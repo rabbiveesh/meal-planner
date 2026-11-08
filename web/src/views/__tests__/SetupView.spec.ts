@@ -57,6 +57,27 @@ describe('SetupView', () => {
     expect(app.checkDay(0)).toEqual([])
   })
 
+  it('adds a meal of the day with the same meals as another', async () => {
+    const { app, user } = await setup()
+    const kids = app.household.meals.filter((m) => m.slots.includes('takeAlong')).map((m) => m.id)
+    expect(kids.length).toBeGreaterThan(0)
+
+    await user.click(screen.getByRole('button', { name: 'Add meal of the day' }))
+    const dialog = await screen.findByRole('dialog', { name: 'Add meal of the day' })
+    await user.type(within(dialog).getByRole('textbox', { name: 'Name' }), "Chedva's take-along")
+    await user.type(within(dialog).getByLabelText('Kids eat at'), '10:00')
+    const same = within(within(dialog).getByRole('group', { name: 'Use the same meals as' }))
+    await user.click(same.getByRole('button', { name: "Kids' take-along" }))
+    await user.click(within(dialog).getByRole('button', { name: 'Save' }))
+
+    const slot = app.household.slots.find((s) => s.name === "Chedva's take-along")
+    expect(slot).toBeDefined()
+    const copied = app.household.meals.filter((m) => m.slots.includes(slot!.id)).map((m) => m.id)
+    expect(copied).toEqual(kids)
+    app.regenerate()
+    expect(app.data.plan.cells.some((c) => c.slotId === slot!.id && c.mealId)).toBe(true)
+  })
+
   it('makes a meal of the day hand-written, which takes it out of the plan', async () => {
     const { app, user } = await setup()
     app.regenerate()

@@ -96,6 +96,24 @@ export function mealsUsingSlot(h: Household, slotId: string): number {
 }
 
 /**
+ * Lets every meal that can fill `fromSlotId`, or eat leftovers in it, do the same in `toSlotId`
+ * (e.g. a second child's take-along with the same choices as the kids' one). Copies once: a
+ * meal added later picks its own slots. Meals already in `toSlotId` stay.
+ */
+export function copySlotMeals(h: Household, fromSlotId: string, toSlotId: string): Household {
+  const withSlot = (ids: string[] | undefined) =>
+    ids?.includes(fromSlotId) && !ids.includes(toSlotId) ? [...ids, toSlotId] : ids
+  return {
+    ...h,
+    meals: h.meals.map((m) => ({
+      ...m,
+      slots: withSlot(m.slots) ?? m.slots,
+      leftoversFor: withSlot(m.leftoversFor),
+    })),
+  }
+}
+
+/**
  * Removes a slot and every reference to it, so no screen is left pointing at a slot that
  * no longer exists: meals' slots and leftovers, the main slot rule, special days and
  * every-week meals.
