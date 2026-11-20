@@ -303,7 +303,8 @@ pub struct AppData {
     /// Her own notes on a meal ("plus vegetable soup for us"), keyed by `yyyy-MM-dd|slotId`.
     #[tsify(type = "Record<string, string>")]
     pub notes: BTreeMap<String, String>,
-    /// What the app calls her when it greets her. '' for no name.
+    /// The name the welcome greeted her by before each phone kept its own: a phone where
+    /// nobody entered a name, signed out, still greets by it. '' for no name.
     pub user_name: String,
     /// From this time of day (HH:mm), the Today screen opens on tomorrow.
     pub tomorrow_from: String,

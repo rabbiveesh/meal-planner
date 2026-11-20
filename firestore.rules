@@ -1,10 +1,107 @@
 rules_version = '2';
 
-// Each signed-in user can read and write only their own data, under users/{their uid}.
+// Each signed-in user has a private plan under users/{their uid}, which only they can use.
+//
+// A shared plan is tenants/{id}: a document saying who may use it, with the plan's change
+// log under tenants/{id}/entries. Its members can read and write the log. The owner
+// invites people by their Google account's email; an invited person can join (adding
+// themselves to the members) or decline. A member can leave; the owner can rename the
+// plan, invite, take back an invite, or remove a member.
+//
+//   tenants/{id}: { name, owner: uid, members: [uid], names: {uid: name}, invited: [email] }
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function myEmail() {
+      return request.auth.token.email;
+    }
+
+    function emailVerified() {
+      return request.auth.token.email_verified == true;
+    }
+
     match /users/{uid}/{document=**} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    match /tenants/{tenantId} {
+      function isMember(data) {
+        return request.auth.uid in data.members;
+      }
+
+      function isInvited(data) {
+        return emailVerified() && myEmail() in data.invited;
+      }
+
+      function changes(keys) {
+        return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+      }
+
+      function wellFormed(data) {
+        return data.keys().hasOnly(['name', 'owner', 'members', 'names', 'invited'])
+          && data.name is string && data.name.size() <= 100
+          && data.owner is string
+          && data.members is list && data.owner in data.members
+          && data.names is map
+          && data.invited is list && data.invited.size() <= 20;
+      }
+
+      // Joining: add yourself (and your name), and take your email off the invites.
+      function joins() {
+        let before = resource.data;
+        let after = request.resource.data;
+        return isInvited(before)
+          && changes(['members', 'names', 'invited'])
+          && after.members.toSet() == before.members.toSet().union([request.auth.uid].toSet())
+          && after.names.diff(before.names).affectedKeys().hasOnly([request.auth.uid])
+          && after.invited.toSet() == before.invited.toSet().difference([myEmail()].toSet());
+      }
+
+      // Declining: take your email off the invites, and nothing else.
+      function declines() {
+        let before = resource.data;
+        let after = request.resource.data;
+        return isInvited(before)
+          && changes(['invited'])
+          && after.invited.toSet() == before.invited.toSet().difference([myEmail()].toSet());
+      }
+
+      // Leaving: take yourself (and your name) off the members. The owner can't leave.
+      function leaves() {
+        let before = resource.data;
+        let after = request.resource.data;
+        return isMember(before)
+          && before.owner != request.auth.uid
+          && changes(['members', 'names'])
+          && after.members.toSet() == before.members.toSet().difference([request.auth.uid].toSet())
+          && !(request.auth.uid in after.names);
+      }
+
+      allow get: if signedIn() && (isMember(resource.data) || isInvited(resource.data));
+      // Lists are only for finding your own plans and invites.
+      allow list: if signedIn() && (isMember(resource.data) || isInvited(resource.data));
+
+      allow create: if signedIn()
+        && wellFormed(request.resource.data)
+        && request.resource.data.owner == request.auth.uid
+        && request.resource.data.members == [request.auth.uid];
+
+      allow update: if signedIn() && wellFormed(request.resource.data) && (
+        (resource.data.owner == request.auth.uid && request.resource.data.owner == request.auth.uid)
+        || joins()
+        || declines()
+        || leaves()
+      );
+
+      allow delete: if signedIn() && resource.data.owner == request.auth.uid;
+
+      match /entries/{entry} {
+        allow read, write: if signedIn()
+          && request.auth.uid in get(/databases/$(database)/documents/tenants/$(tenantId)).data.members;
+      }
     }
   }
 }

@@ -13,10 +13,18 @@ The project is set up already (`meal-planner-8e85f`, Firestore in `me-west1`); i
 
 ## Data layout
 
-`users/{uid}/entries/{escaped key}`, one document `{ key, value, modifiedAt }` per storage key, written through `web/src/storage/firestore.ts`. Each key is one change in the household's log (`changes:<id>`), written once and never updated. The app listens to the collection, so changes from other phones appear live, and on each start it asks the server only for changes newer than the ones it already has.
+Each change log is a collection of documents `{ key, value, modifiedAt }`, one per storage key, written through `web/src/storage/firestore.ts`. Each key is one change (`changes:<id>`), written once and never updated. The app listens to the collection, so changes from other phones appear live, and on each start it asks the server only for changes newer than the ones it already has.
 
-Signing in moves the changes made on the phone while signed out into the account. The log only grows, so this never overwrites what the account already has: two households' worth of meals simply add up.
+- `users/{uid}/entries/{escaped key}`: a person's own plan ("Just me"). Only they can use it.
+- `tenants/{id}`: a shared plan: `{ name, owner, members: [uid], names: {uid: name}, invited: [email] }`. Who may use it is access control that the rules read, so this one document is updated in place rather than logged.
+- `tenants/{id}/entries/{escaped key}`: the shared plan's change log, which its members can read and write.
+
+Sharing starts a shared plan as a copy of the plan shown; the owner invites people by their Google account's email. An invited person sees the invite when they sign in, and joining adds them to `members`. Members can leave; the owner can take back invites and remove members. The phone remembers which plan it showed last.
+
+Signing in moves the changes made on the phone while signed out into the person's own plan. The log only grows, so this never overwrites what the account already has.
+
+**Deploying rules:** whenever `firestore.rules` changes, publish it before (or with) the app that needs it: `npx firebase-tools deploy --only firestore:rules --project meal-planner-8e85f`, or paste it into Firestore Database > Rules.
 
 ## Tests
 
-The driver has its own tests against the Firestore emulator: `npm run test:emulator` in `web/` (needs Java 21). CI runs them.
+The driver and the access rules have their own tests against the Firestore emulator: `npm run test:emulator` in `web/` (needs Java 21). CI runs them.
