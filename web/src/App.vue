@@ -2,20 +2,27 @@
 import { onMounted, ref, watch } from 'vue'
 import AppUpdate from '@/components/app/AppUpdate.vue'
 import ConflictsCard from '@/components/app/ConflictsCard.vue'
+import InviteCard from '@/components/account/InviteCard.vue'
+import PlanSwitcher from '@/components/account/PlanSwitcher.vue'
 import WelcomeBurst from '@/components/welcome/WelcomeBurst.vue'
 import { useAccountStore } from '@/stores/account'
 import { useAppStore } from '@/stores/app'
+import { useMeStore } from '@/stores/me'
 
 const app = useAppStore()
 const account = useAccountStore()
+const me = useMeStore()
 // Loads the data from this phone, or from the account once sign-in says who is signed in.
-onMounted(() => account.follow())
+onMounted(() => {
+  void me.load()
+  account.follow()
+})
 
 // The welcome shows once per app open, even when signing in loads the data again.
 const opened = ref(false)
 watch(
-  () => app.loaded,
-  (loaded) => (opened.value ||= loaded),
+  () => app.loaded && me.ready,
+  (ready) => (opened.value ||= ready),
   { immediate: true },
 )
 
@@ -33,6 +40,7 @@ const tabs = [
     <v-app-bar color="primary" density="comfortable">
       <v-app-bar-title>Meal Planner</v-app-bar-title>
       <template #append>
+        <PlanSwitcher />
         <v-btn icon="mdi-cog" to="/setup" aria-label="Setup" />
       </template>
     </v-app-bar>
@@ -47,12 +55,13 @@ const tabs = [
           class="mb-4"
           :text="`Your last change wasn't saved: ${app.saveError}`"
         />
+        <InviteCard />
         <ConflictsCard />
         <router-view />
       </v-container>
       <div v-else class="d-flex justify-center pa-8"><v-progress-circular indeterminate /></div>
       <!-- Once per app open: App stays mounted while she moves between sections. -->
-      <WelcomeBurst v-if="opened" :name="app.data.userName" />
+      <WelcomeBurst v-if="opened" :name="me.name" />
       <AppUpdate />
     </v-main>
 

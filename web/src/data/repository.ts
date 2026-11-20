@@ -5,7 +5,7 @@ import { format, startOfWeek } from 'date-fns'
 import type { Storage, Unwatch } from 'unstorage'
 
 import { validate, type EntryChange } from '@/core'
-import { getDeviceStorage, getStorage } from '@/storage'
+import { getDeviceStorage, getStorage, inOwnPlan } from '@/storage'
 import { migrate, migrateChange } from './migrations'
 import {
   CHANGE_VERSION,
@@ -42,18 +42,19 @@ export function emptyData(today = new Date()): AppData {
 
 async function changesIn(storage: Storage): Promise<EntryChange[]> {
   const keys = await storage.getKeys(CHANGES)
-  return (await storage.getItems(keys)).map((entry) => migrateChange(entry.value))
+  // A change can move off the phone between listing and reading it; it is elsewhere then.
+  return (await storage.getItems(keys))
+    .filter((entry) => entry.value != null)
+    .map((entry) => migrateChange(entry.value))
 }
 
 /**
- * Every change saved so far, in the current format: where the log is kept now, plus any
- * still on this phone waiting to move into the account. The same change may come twice.
+ * Every change saved so far, in the current format: where the log is kept now, plus, in her
+ * own plan, any still on this phone waiting to move into it. The same change may come twice.
  */
 export async function loadChanges(): Promise<EntryChange[]> {
-  const storage = getStorage()
-  const phone = getDeviceStorage()
-  const here = await changesIn(storage)
-  return storage === phone ? here : [...here, ...(await changesIn(phone))]
+  const here = await changesIn(getStorage())
+  return inOwnPlan() ? [...here, ...(await changesIn(getDeviceStorage()))] : here
 }
 
 /**
@@ -79,17 +80,45 @@ export async function appendChanges(changes: EntryChange[]): Promise<void> {
 }
 
 /**
- * Moves the changes kept on this phone while signed out into the change log in use now
- * (the account, once signed in). The log only grows, so nothing already there is lost.
- * The phone's copy of a change is removed only once the account has confirmed it, so if
- * this is cut short (offline, the app closed) the rest moves next time.
+ * Moves the changes kept on this phone while signed out into `account` (her own plan in
+ * the cloud). The log only grows, so nothing already there is lost. The phone's copy of a
+ * change is removed only once the account has confirmed it, so if this is cut short
+ * (offline, the app closed) the rest moves next time.
  */
-export async function moveChangesFromPhone(): Promise<void> {
+export async function moveChangesFromPhone(account: Storage): Promise<void> {
   const phone = getDeviceStorage()
-  if (getStorage() === phone) return
+  if (account === phone) return
   const changes = await changesIn(phone)
-  await appendChanges(changes)
+  if (changes.length) await account.setItems(changes.map(stored))
   for (const change of changes) await phone.removeItem(`${CHANGES}:${change.id}`)
+}
+
+/** Copies every change in the log in use now into `target`, e.g. a newly shared plan. */
+export async function copyChangesInto(target: Storage): Promise<void> {
+  const changes = await loadChanges()
+  if (changes.length) await target.setItems(changes.map(stored))
+}
+
+const MY_NAME = 'my-name'
+
+/** The name this phone's person is greeted by, if they entered one here. */
+export async function loadMyName(): Promise<string | null> {
+  return getDeviceStorage().getItem<string>(MY_NAME)
+}
+
+export async function saveMyName(name: string): Promise<void> {
+  await getDeviceStorage().setItem(MY_NAME, name)
+}
+
+const PLAN_CHOICE = 'plan'
+
+/** Which plan this phone last showed for an account, if it has chosen one. */
+export async function loadPlanChoice(uid: string): Promise<string | null> {
+  return getDeviceStorage().getItem<string>(`${PLAN_CHOICE}:${uid}`)
+}
+
+export async function savePlanChoice(uid: string, planId: string): Promise<void> {
+  await getDeviceStorage().setItem(`${PLAN_CHOICE}:${uid}`, planId)
 }
 
 /** What an older version of the app saved on this phone as one item, if anything. */

@@ -6,6 +6,8 @@ import { emptyData, exportJson } from '@/data/repository'
 import { shortWeekday } from '@/lib/labels'
 import { mountComponent, setupStore } from '@/test-utils'
 import SetupView from '@/views/SetupView.vue'
+import { getDeviceStorage } from '@/storage'
+import { useMeStore } from '@/stores/me'
 
 async function setup() {
   const store = await setupStore()
@@ -13,10 +15,11 @@ async function setup() {
 }
 
 describe('SetupView', () => {
-  it('keeps the name the welcome greets her by', async () => {
-    const { app, user } = await setup()
-    await user.type(screen.getByRole('textbox', { name: 'Your name' }), 'Masha Cohen')
-    expect(app.data.userName).toBe('Masha Cohen')
+  it('keeps the name the welcome greets her by on this phone', async () => {
+    const { user } = await setup()
+    await user.type(screen.getByRole('textbox', { name: 'Your name' }), 'Sam Example')
+    expect(useMeStore().name).toBe('Sam Example')
+    expect(await getDeviceStorage().getItem('my-name')).toBe('Sam Example')
   })
 
   it('adds a person', async () => {

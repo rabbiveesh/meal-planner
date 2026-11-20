@@ -14,7 +14,7 @@
     "lint:oxlint": "oxlint . --fix",
     "lint:eslint": "eslint . --fix --cache",
     "format": "prettier --write --experimental-cli src/",
-    "test:emulator": "firebase emulators:exec --config firebase.emulator.json --only firestore --project demo-meal-planner 'vitest run src/storage'"
+    "test:emulator": "firebase emulators:exec --config firebase.emulator.json --only firestore --project demo-meal-planner 'vitest run src/storage src/account'"
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
@@ -32,6 +32,7 @@
     "vuetify": "^4.2.4"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^6.0.0",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/user-event": "^14.6.7",

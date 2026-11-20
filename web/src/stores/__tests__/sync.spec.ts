@@ -3,7 +3,13 @@ import { describe, expect, it } from 'vitest'
 
 import { importJson, loadChanges, moveChangesFromPhone } from '@/data/repository'
 import starter from '@/data/templates/starter.json'
-import { getDeviceStorage, useDeviceDriver, useDriver, usePhoneStorage } from '@/storage'
+import {
+  getDeviceStorage,
+  getStorage,
+  useDeviceDriver,
+  useDriver,
+  usePhoneStorage,
+} from '@/storage'
 import { useAppStore } from '@/stores/app'
 
 /** A phone with its own device storage, sharing whatever change log is in use. */
@@ -111,7 +117,7 @@ describe('moving data', () => {
     const meals = app.household.meals.map((m) => m.name)
 
     useDriver() // the account's (empty) data
-    await moveChangesFromPhone()
+    await moveChangesFromPhone(getStorage())
     await app.load()
     expect(app.household.meals.map((m) => m.name)).toEqual(meals)
     expect(await getDeviceStorage().getKeys('changes')).toEqual([])
