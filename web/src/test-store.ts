@@ -4,7 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 
 import { importJson } from '@/data/repository'
 import starter from '@/data/templates/starter.json'
-import { useDriver } from '@/storage'
+import { useDeviceDriver, usePhoneStorage } from '@/storage'
 import { useAppStore } from '@/stores/app'
 
 export interface StoreOptions {
@@ -19,7 +19,8 @@ export async function setupStore({
   starter: withStarter = true,
   regenerate = false,
 }: StoreOptions = {}) {
-  useDriver()
+  useDeviceDriver()
+  usePhoneStorage()
   const pinia = createPinia()
   setActivePinia(pinia)
   const app = useAppStore()
@@ -27,6 +28,7 @@ export async function setupStore({
   if (withStarter) {
     app.replaceAll(importJson(JSON.stringify(starter)))
     if (regenerate) app.regenerate()
+    await app.save()
   }
   return { app, pinia }
 }

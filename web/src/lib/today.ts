@@ -3,7 +3,7 @@
 import { addDays, format, isValid, parse, startOfDay } from 'date-fns'
 
 import type { Household, SlotDef, SpecialDay } from '@/core'
-import { getStorage } from '@/storage'
+import { getDeviceStorage } from '@/storage'
 import { plannedSlots } from './household'
 import { CYCLE_DAYS } from './rotation'
 
@@ -102,10 +102,10 @@ interface PrepChecks {
 
 /** Ticked prep items for `list`; ticks from an older list are dropped. */
 export async function loadPrepChecks(list: string): Promise<string[]> {
-  const saved = await getStorage().getItem<PrepChecks>(PREP_KEY)
+  const saved = await getDeviceStorage().getItem<PrepChecks>(PREP_KEY)
   return saved?.list === list ? saved.done : []
 }
 
 export async function savePrepChecks(list: string, done: string[]): Promise<void> {
-  await getStorage().setItem<PrepChecks>(PREP_KEY, { list, done: [...done] })
+  await getDeviceStorage().setItem<PrepChecks>(PREP_KEY, { list, done: [...done] })
 }

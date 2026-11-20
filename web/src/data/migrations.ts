@@ -1,8 +1,18 @@
 import { omit } from 'es-toolkit'
 
-import { DEFAULT_TOMORROW_FROM, SCHEMA_VERSION, type AppData } from './schema'
+import type { EntryChange } from '@/core'
+import {
+  CHANGE_VERSION,
+  DEFAULT_TOMORROW_FROM,
+  SCHEMA_VERSION,
+  type AppData,
+  type StoredChange,
+} from './schema'
 
-/** One step per version: migrations[n] upgrades data from version n to n + 1. */
+/**
+ * One step per version: migrations[n] upgrades data (a backup file, or what older versions of
+ * the app saved on the phone) from version n to n + 1.
+ */
 const migrations: Record<number, (data: Record<string, unknown>) => Record<string, unknown>> = {
   // v2: special-day answers moved from plan cells (per rotation day) to dated answers.
   1: (data) => {
@@ -23,7 +33,7 @@ const migrations: Record<number, (data: Record<string, unknown>) => Record<strin
 
 export class UnsupportedDataError extends Error {}
 
-/** Upgrades stored data of any known version to the current schema. */
+/** Upgrades data (a backup, or what an older app saved) of any known version to the current schema. */
 export function migrate(raw: unknown): AppData {
   if (
     typeof raw !== 'object' ||
@@ -44,4 +54,32 @@ export function migrate(raw: unknown): AppData {
     data = { ...step(data), version: data.version + 1 }
   }
   return data as unknown as AppData
+}
+
+/** One step per version: changeMigrations[n] upgrades a stored change from version n to n + 1. */
+const changeMigrations: Record<
+  number,
+  (change: Record<string, unknown>) => Record<string, unknown>
+> = {
+  // None yet: v1 is the first version.
+}
+
+/** Upgrades one stored change of any known version to the current format. */
+export function migrateChange(raw: unknown): EntryChange {
+  const stored = raw as Partial<StoredChange> | null
+  if (typeof stored?.v !== 'number' || typeof stored.change !== 'object') {
+    throw new UnsupportedDataError('A saved change has no version number')
+  }
+  if (stored.v > CHANGE_VERSION) {
+    throw new UnsupportedDataError(
+      `Some changes were saved by a newer version of the app (v${stored.v}); please update the app`,
+    )
+  }
+  let change = stored.change as unknown as Record<string, unknown>
+  for (let v = stored.v; v < CHANGE_VERSION; v++) {
+    const step = changeMigrations[v]
+    if (!step) throw new UnsupportedDataError(`No migration from v${v}`)
+    change = step(change)
+  }
+  return change as unknown as EntryChange
 }

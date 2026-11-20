@@ -14,7 +14,7 @@ It respects meat/dairy waiting times per eater, keeps cook-fresh dishes to the d
 | Path | What |
 |---|---|
 | `core/` | Rust crate with all planning logic, compiled to WebAssembly. Pure functions, no I/O. |
-| `web/` | Vue 3 + Vuetify app (installable PWA). Data is stored in the browser through `web/src/storage`. |
+| `web/` | Vue 3 + Vuetify app (installable PWA). Data is an append-only change log, kept in the browser or, signed in with Google, in Firebase (see `docs/firebase-setup.md`). |
 
 ## Development
 
@@ -28,7 +28,7 @@ cd core && wasm-pack build --release --target bundler --out-dir pkg --out-name m
 cd ../web && npm install && npm run dev
 ```
 
-Tests: `cargo test` in `core/`, `npx vitest run` in `web/`.
+Tests: `cargo test` in `core/`, `npx vitest run` in `web/`, and `npm run test:emulator` in `web/` for the Firestore storage driver (needs Java 21).
 
 ## Deploying
 

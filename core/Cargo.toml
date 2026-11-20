@@ -9,6 +9,8 @@ license = "MIT"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+# Until change-graph is released on crates.io.
+change-graph = { git = "https://github.com/rabbiveesh/change-graph", rev = "e7811b18ac952fbb2aef3198ca5fb545704a2835", features = ["tsify"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 wasm-bindgen = "0.2"

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 // Settings she changes rarely: her name, people, meals of the day, weekly rules, every-week
 // meals, rotation, the Today screen, backup.
+import AccountCard from '@/components/account/AccountCard.vue'
 import BackupCard from '@/components/setup/BackupCard.vue'
 import EatersCard from '@/components/setup/EatersCard.vue'
 import FixedMealsCard from '@/components/setup/FixedMealsCard.vue'
@@ -21,6 +22,7 @@ import YouCard from '@/components/setup/YouCard.vue'
     <FixedMealsCard />
     <RotationCard />
     <TodayScreenCard />
+    <AccountCard />
     <BackupCard />
   </div>
 </template>

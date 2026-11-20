@@ -1,5 +1,7 @@
 //! Data model shared with the frontend. Everything is (de)serialized as camelCase JSON.
 
+use std::collections::BTreeMap;
+
 use serde::{Deserialize, Serialize};
 use tsify::Tsify;
 
@@ -13,7 +15,7 @@ pub enum EaterKind {
     Child,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Tsify)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
 #[serde(rename_all = "camelCase")]
 pub struct Eater {
     pub id: String,
@@ -41,7 +43,7 @@ pub enum View {
 }
 
 /// One meal slot in the day, e.g. "Main meal" or "Kids' take-along".
-#[derive(Debug, Clone, Serialize, Deserialize, Tsify)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
 #[serde(rename_all = "camelCase")]
 pub struct SlotDef {
     pub id: String,
@@ -96,7 +98,7 @@ pub enum Prep {
     Instant,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Tsify)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
 #[serde(rename_all = "camelCase")]
 pub struct Ingredient {
     pub item: String,
@@ -116,7 +118,7 @@ pub struct Ingredient {
     pub category: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Tsify)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
 #[serde(rename_all = "camelCase")]
 pub struct Meal {
     pub id: String,
@@ -168,7 +170,7 @@ pub struct Meal {
 
 /// A recurring "maybe" on a given day, e.g. Shabbos leftovers on Sunday or Mom's supper on Wednesday.
 /// The planner always schedules a backup meal; the app asks the question and marks the cell active.
-#[derive(Debug, Clone, Serialize, Deserialize, Tsify)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
 #[serde(rename_all = "camelCase")]
 pub struct SpecialDay {
     pub day: u8,
@@ -187,7 +189,7 @@ pub struct SpecialDay {
 
 /// A meal that is planned every week on the same day, e.g. soup every Sunday night.
 /// With several meals the planner takes turns between them.
-#[derive(Debug, Clone, Serialize, Deserialize, Tsify)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
 #[serde(rename_all = "camelCase")]
 pub struct FixedMeal {
     /// Weekday (0 = Sunday).
@@ -196,7 +198,7 @@ pub struct FixedMeal {
     pub meal_ids: Vec<String>,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, Tsify)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Tsify)]
 #[serde(rename_all = "camelCase")]
 pub struct Rules {
     /// Weekdays she can cook fresh (0 = Sunday).
@@ -215,7 +217,7 @@ pub struct Rules {
     pub fixed_meals: Vec<FixedMeal>,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, Tsify)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Tsify)]
 #[serde(rename_all = "camelCase")]
 pub struct Household {
     pub eaters: Vec<Eater>,
@@ -249,10 +251,62 @@ pub struct Cell {
     pub locked: bool,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize, Tsify)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Tsify)]
 #[serde(rename_all = "camelCase")]
 pub struct Plan {
     pub cells: Vec<Cell>,
+}
+
+/// An item on the user's own store master list.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Tsify)]
+#[serde(rename_all = "camelCase")]
+pub struct StapleItem {
+    pub id: String,
+    pub name: String,
+    pub category: String,
+}
+
+/// Pantry-check answer for one shopping item.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Tsify)]
+#[serde(rename_all = "camelCase")]
+pub enum PantryMark {
+    Have,
+    Need,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Tsify)]
+#[serde(rename_all = "camelCase")]
+pub struct ShoppingState {
+    pub staples: Vec<StapleItem>,
+    /// Pantry-check answers, keyed by shopping item key.
+    #[tsify(type = "Record<string, PantryMark>")]
+    pub marks: BTreeMap<String, PantryMark>,
+    /// Keys ticked off in the store.
+    pub bought: Vec<String>,
+}
+
+/// Everything the app keeps for one household.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Tsify)]
+#[serde(rename_all = "camelCase")]
+pub struct AppData {
+    /// The format version of a backup file holding this data.
+    pub version: u32,
+    pub household: Household,
+    pub plan: Plan,
+    /// yyyy-MM-dd of the Sunday that starts week A of the rotation.
+    pub rotation_start: String,
+    pub shopping: ShoppingState,
+    /// Answers to the weekly special-day questions ("Any Shabbos leftovers?"), keyed by
+    /// `yyyy-MM-dd|slotId`: an answer applies to that one date only. Missing means not asked.
+    #[tsify(type = "Record<string, boolean>")]
+    pub special_answers: BTreeMap<String, bool>,
+    /// Her own notes on a meal ("plus vegetable soup for us"), keyed by `yyyy-MM-dd|slotId`.
+    #[tsify(type = "Record<string, string>")]
+    pub notes: BTreeMap<String, String>,
+    /// What the app calls her when it greets her. '' for no name.
+    pub user_name: String,
+    /// From this time of day (HH:mm), the Today screen opens on tomorrow.
+    pub tomorrow_from: String,
 }
 
 impl Household {

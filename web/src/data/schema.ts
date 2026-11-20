@@ -1,52 +1,18 @@
-import type { Household, Plan } from '@/core'
+// The shape of what the app keeps. The household's data (`AppData`, generated from the Rust
+// core) is never stored as such: it is the change log, which the core folds back into it.
+// A backup file is `AppData` as it is.
+import type { EntryChange } from '@/core'
 
-/** Bump this and add a step in migrations.ts whenever the stored shape changes. */
+export type { AppData, PantryMark, ShoppingState, StapleItem } from '@/core'
+
+/** Bump this and add a step in migrations.ts whenever the backup file's shape changes. */
 export const SCHEMA_VERSION = 5
+
+/** Bump this and add a step in migrations.ts whenever the stored change format changes. */
+export const CHANGE_VERSION = 1
 
 /** When Today starts opening on tomorrow, unless she picks another time. */
 export const DEFAULT_TOMORROW_FROM = '20:00'
 
-/** An item on the user's own store master list (e.g. her Osher Ad list). */
-export interface StapleItem {
-  id: string
-  name: string
-  category: string
-}
-
-/** Pantry-check answer for one shopping item. */
-export type PantryMark = 'have' | 'need'
-
-export interface ShoppingState {
-  staples: StapleItem[]
-  /** Pantry-check answers, keyed by shopping item key (see lib/shopping.ts). */
-  marks: Record<string, PantryMark>
-  /** Keys ticked off in the store. */
-  bought: string[]
-}
-
-export interface AppData {
-  version: number
-  household: Household
-  plan: Plan
-  /** yyyy-MM-dd of the Sunday that starts week A of the rotation. */
-  rotationStart: string
-  shopping: ShoppingState
-  /**
-   * Answers to the weekly special-day questions ("Any Shabbos leftovers?"), keyed by
-   * `yyyy-MM-dd|slotId`. Kept by calendar date, not rotation day, so an answer applies to
-   * that one date only. Missing means not asked yet.
-   */
-  specialAnswers: Record<string, boolean>
-  /**
-   * Her own notes on a meal ("plus vegetable soup for us"), keyed by `yyyy-MM-dd|slotId`.
-   * Kept by calendar date, like special-day answers, so a note is about that one day.
-   */
-  notes: Record<string, string>
-  /** What the app calls her when it greets her ("Let's get meal planning, …!"). '' for no name. */
-  userName: string
-  /**
-   * From this time of day (HH:mm), the Today screen opens on tomorrow: by evening, tomorrow's
-   * meals are the ones she's preparing for.
-   */
-  tomorrowFrom: string
-}
+/** One change as stored: its format version, so any version of the app can read it. */
+export type StoredChange = { v: number; change: EntryChange }

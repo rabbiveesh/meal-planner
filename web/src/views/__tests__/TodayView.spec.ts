@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fireEvent, screen, within } from '@testing-library/dom'
 
-import { getStorage } from '@/storage'
+import { getDeviceStorage } from '@/storage'
 import { mountRoute, setupStore } from '@/test-utils'
 
 describe('TodayView', () => {
@@ -93,7 +93,7 @@ describe('TodayView', () => {
     await user.click(first)
     expect(first).toBeChecked()
     await vi.waitFor(async () =>
-      expect(await getStorage().getItem('prep-checked')).toEqual({
+      expect(await getDeviceStorage().getItem('prep-checked')).toEqual({
         list: '2026-10-13',
         done: [`${items[0]!.slotId}:${items[0]!.text}`],
       }),
