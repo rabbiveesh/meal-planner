@@ -19,18 +19,22 @@ export const useAccountStore = defineStore('account', () => {
   /** Follows sign-in and sign-out, loading the data from where it is kept for each. */
   function follow() {
     watchAccount(async (signedIn) => {
-      // Edits made a moment ago are saved where they were made.
+      // Edits made a moment ago are saved where they were made: saving starts writing at
+      // once, to the storage in use when it starts.
       void app.save()
       account.value = signedIn
-      if (signedIn) {
-        useAccountStorage(signedIn.uid)
-        // What she made on this phone before signing in joins the account's data.
-        await moveChangesFromPhone()
-      } else {
-        usePhoneStorage()
-      }
+      if (signedIn) useAccountStorage(signedIn.uid)
+      else usePhoneStorage()
       known.value = true
+      // Signed in, this shows the account's data and whatever is still on this phone.
       await app.load()
+      if (signedIn) {
+        // What she made on this phone before signing in joins the account's data. Offline,
+        // that waits; meanwhile the phone keeps its copy and the app keeps showing it.
+        moveChangesFromPhone().catch(() => {
+          // Kept on the phone; the next start tries again.
+        })
+      }
     })
   }
 

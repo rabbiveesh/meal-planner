@@ -45,9 +45,15 @@ async function changesIn(storage: Storage): Promise<EntryChange[]> {
   return (await storage.getItems(keys)).map((entry) => migrateChange(entry.value))
 }
 
-/** Every change saved so far, in the current format. */
-export function loadChanges(): Promise<EntryChange[]> {
-  return changesIn(getStorage())
+/**
+ * Every change saved so far, in the current format: where the log is kept now, plus any
+ * still on this phone waiting to move into the account. The same change may come twice.
+ */
+export async function loadChanges(): Promise<EntryChange[]> {
+  const storage = getStorage()
+  const phone = getDeviceStorage()
+  const here = await changesIn(storage)
+  return storage === phone ? here : [...here, ...(await changesIn(phone))]
 }
 
 /**
@@ -75,6 +81,8 @@ export async function appendChanges(changes: EntryChange[]): Promise<void> {
 /**
  * Moves the changes kept on this phone while signed out into the change log in use now
  * (the account, once signed in). The log only grows, so nothing already there is lost.
+ * The phone's copy of a change is removed only once the account has confirmed it, so if
+ * this is cut short (offline, the app closed) the rest moves next time.
  */
 export async function moveChangesFromPhone(): Promise<void> {
   const phone = getDeviceStorage()
