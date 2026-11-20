@@ -10,8 +10,8 @@ use std::collections::{BTreeMap, BTreeSet};
 use serde::{Deserialize, Serialize};
 use tsify::Tsify;
 
-use crate::changes::{self, Change, Edit, Record, RecordEdit, Stamp};
 use crate::model::{AppData, Cell, Eater, Meal, PantryMark, Rules, SlotDef, StapleItem};
+use change_graph::{Change, Edit, Record, RecordEdit, Stamp};
 
 /// The value a record holds. A record is always set as a whole.
 #[derive(Tsify, Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -270,7 +270,7 @@ pub fn record_edits(
     edits: Vec<RecordEdit<Entry>>,
     stamp: &Stamp,
 ) -> Vec<Change<Entry>> {
-    changes::record_all(changes, edits, stamp)
+    change_graph::record_all(changes, edits, stamp)
 }
 
 /// Replays the log into the app's data and the conflicts waiting for the user. `start` is
@@ -295,7 +295,7 @@ pub fn fold(changes: &[Change<Entry>], start: AppData) -> Ledger {
     let mut slots = Vec::new();
     let mut meals = Vec::new();
     let mut staples = Vec::new();
-    for merged in changes::merge::<Latest>(changes) {
+    for merged in change_graph::merge::<Latest>(changes) {
         let Some(entry) = merged.record.0 else {
             continue;
         };

@@ -3,7 +3,6 @@
 //! Pure functions over plain data: no storage, no I/O. The wasm bindings below are what the
 //! Vue app calls; the same functions can be lifted into a server later.
 
-pub mod changes;
 pub mod entries;
 pub mod kashrut;
 pub mod model;
@@ -19,7 +18,7 @@ use serde::Serialize;
 use tsify::{Ts, Tsify};
 use wasm_bindgen::prelude::*;
 
-use changes::{Change, Stamp};
+use change_graph::{Change, Stamp};
 use entries::{Entry, EntryChange, EntryEdit, Ledger};
 use model::{AppData, Household, Plan};
 
