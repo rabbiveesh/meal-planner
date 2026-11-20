@@ -3,6 +3,8 @@
 //! Pure functions over plain data: no storage, no I/O. The wasm bindings below are what the
 //! Vue app calls; the same functions can be lifted into a server later.
 
+pub mod changes;
+pub mod entries;
 pub mod kashrut;
 pub mod model;
 pub mod planner;
@@ -17,7 +19,9 @@ use serde::Serialize;
 use tsify::{Ts, Tsify};
 use wasm_bindgen::prelude::*;
 
-use model::{Household, Plan};
+use changes::{Change, Stamp};
+use entries::{Entry, EntryChange, EntryEdit, Ledger};
+use model::{AppData, Household, Plan};
 
 #[derive(Serialize, Tsify)]
 #[serde(rename_all = "camelCase")]
@@ -105,4 +109,57 @@ pub fn validate(household: Ts<Household>, plan: Ts<Plan>) -> Result<(), JsError>
     plan.to_rust()
         .map_err(|e| JsError::new(&format!("Plan: {e}")))?;
     Ok(())
+}
+
+/// The app's data, and the conflicts waiting for her, from the whole change log. `start` is
+/// the data a new household starts with.
+#[wasm_bindgen(js_name = foldAppData)]
+pub fn fold_app_data(
+    changes: Vec<Ts<EntryChange>>,
+    start: Ts<AppData>,
+) -> Result<Ts<Ledger>, JsError> {
+    Ok(entries::fold(&unwrap_changes(changes)?, start.to_rust()?).into_ts()?)
+}
+
+/// The changes that record what changed from `before` to `after`, building on every change
+/// seen so far. None when nothing changed.
+#[wasm_bindgen(js_name = appDataChanges)]
+pub fn app_data_changes(
+    changes: Vec<Ts<EntryChange>>,
+    before: Ts<AppData>,
+    after: Ts<AppData>,
+    stamp: Ts<Stamp>,
+) -> Result<Vec<Ts<EntryChange>>, JsError> {
+    let changes = unwrap_changes(changes)?;
+    let edits = entries::app_data_edits(&changes, &before.to_rust()?, &after.to_rust()?);
+    wrap_changes(entries::record_edits(&changes, edits, &stamp.to_rust()?))
+}
+
+/// The changes that record `edits`, e.g. her pick when settling a conflict.
+#[wasm_bindgen(js_name = recordEdits)]
+pub fn record_edits(
+    changes: Vec<Ts<EntryChange>>,
+    edits: Vec<Ts<EntryEdit>>,
+    stamp: Ts<Stamp>,
+) -> Result<Vec<Ts<EntryChange>>, JsError> {
+    let edits = edits
+        .into_iter()
+        .map(|e| Ok(e.to_rust()?.0))
+        .collect::<Result<Vec<_>, JsError>>()?;
+    wrap_changes(entries::record_edits(
+        &unwrap_changes(changes)?,
+        edits,
+        &stamp.to_rust()?,
+    ))
+}
+
+fn unwrap_changes(changes: Vec<Ts<EntryChange>>) -> Result<Vec<Change<Entry>>, JsError> {
+    changes.into_iter().map(|c| Ok(c.to_rust()?.0)).collect()
+}
+
+fn wrap_changes(changes: Vec<Change<Entry>>) -> Result<Vec<Ts<EntryChange>>, JsError> {
+    changes
+        .into_iter()
+        .map(|c| Ok(EntryChange(c).into_ts()?))
+        .collect()
 }

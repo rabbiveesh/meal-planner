@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { Household, SlotDef } from '@/core'
 import { importJson } from '@/data/repository'
 import starter from '@/data/templates/starter.json'
-import { useDriver } from '@/storage'
+import { useDeviceDriver } from '@/storage'
 import {
   dateParam,
   loadPrepChecks,
@@ -96,7 +96,7 @@ describe('today helpers', () => {
   })
 
   describe('prep checks', () => {
-    beforeEach(() => useDriver())
+    beforeEach(() => useDeviceDriver())
 
     it('remembers ticks for the same list only', async () => {
       expect(await loadPrepChecks('2026-10-12')).toEqual([])

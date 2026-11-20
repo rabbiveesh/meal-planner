@@ -27,6 +27,16 @@ globalThis.visualViewport ??= Object.assign(new EventTarget(), {
   onscrollend: null,
 }) as VisualViewport
 
+// Nobody is signed in during tests: the app keeps its data on the phone (in memory).
+vi.mock('@/account', () => ({
+  watchAccount: (onChange: (account: null) => void) => {
+    onChange(null)
+    return () => {}
+  },
+  signInWithGoogle: vi.fn<() => Promise<void>>(),
+  signOutOfAccount: vi.fn<() => Promise<void>>(),
+}))
+
 // canvas-confetti draws on a canvas, which jsdom can't render; tests check its calls instead.
 vi.mock('canvas-confetti', () => ({ default: vi.fn<typeof confetti>() }))
 
@@ -34,5 +44,6 @@ vi.mock('canvas-confetti', () => ({ default: vi.fn<typeof confetti>() }))
 // (the overlay container that dialogs teleport into).
 enableAutoUnmount(afterEach)
 afterEach(() => {
-  document.body.innerHTML = ''
+  // Tests in the node environment (the storage driver's) have no document.
+  if (typeof document !== 'undefined') document.body.innerHTML = ''
 })

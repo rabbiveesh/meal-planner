@@ -1,11 +1,23 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import AppUpdate from '@/components/app/AppUpdate.vue'
+import ConflictsCard from '@/components/app/ConflictsCard.vue'
 import WelcomeBurst from '@/components/welcome/WelcomeBurst.vue'
+import { useAccountStore } from '@/stores/account'
 import { useAppStore } from '@/stores/app'
 
 const app = useAppStore()
-onMounted(() => app.load())
+const account = useAccountStore()
+// Loads the data from this phone, or from the account once sign-in says who is signed in.
+onMounted(() => account.follow())
+
+// The welcome shows once per app open, even when signing in loads the data again.
+const opened = ref(false)
+watch(
+  () => app.loaded,
+  (loaded) => (opened.value ||= loaded),
+  { immediate: true },
+)
 
 const tabs = [
   { to: '/', icon: 'mdi-calendar-today', label: 'Today' },
@@ -28,11 +40,19 @@ const tabs = [
     <v-main>
       <v-alert v-if="app.loadError" type="error" class="ma-4" :text="app.loadError" />
       <v-container v-else-if="app.loaded" class="pa-3" style="max-width: 900px">
+        <v-alert
+          v-if="app.saveError"
+          type="error"
+          variant="tonal"
+          class="mb-4"
+          :text="`Your last change wasn't saved: ${app.saveError}`"
+        />
+        <ConflictsCard />
         <router-view />
       </v-container>
       <div v-else class="d-flex justify-center pa-8"><v-progress-circular indeterminate /></div>
       <!-- Once per app open: App stays mounted while she moves between sections. -->
-      <WelcomeBurst v-if="app.loaded" :name="app.data.userName" />
+      <WelcomeBurst v-if="opened" :name="app.data.userName" />
       <AppUpdate />
     </v-main>
 

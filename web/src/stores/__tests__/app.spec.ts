@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { getStorage } from '@/storage'
+import { loadChanges } from '@/data/repository'
 import { setupStore } from '@/test-store'
 
 describe('app store', () => {
@@ -26,10 +26,27 @@ describe('app store', () => {
     expect(app.cell(3, 'main')?.mealId).toBe(meal.id)
   })
 
-  it('saves to storage', async () => {
-    await setupStore()
+  it('saves what she enters, so it is there next time the app opens', async () => {
+    const { app } = await setupStore()
+    const meals = app.household.meals.map((m) => m.name)
+    await app.load()
+    expect(app.household.meals.map((m) => m.name)).toEqual(meals)
+    expect((await loadChanges()).length).toBeGreaterThan(0)
+  })
+
+  it('saves an edit a moment after she makes it', async () => {
+    const { app } = await setupStore()
+    app.setUserName('Someone')
     await new Promise((r) => setTimeout(r, 400))
-    expect(await getStorage().hasItem('app-data')).toBe(true)
+    await app.load()
+    expect(app.data.userName).toBe('Someone')
+  })
+
+  it('opening the app saves nothing until she changes something', async () => {
+    const { app } = await setupStore({ starter: false })
+    await new Promise((r) => setTimeout(r, 400))
+    await app.save()
+    expect(await loadChanges()).toEqual([])
   })
 })
 

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
-import { computed, ref } from 'vue'
+import type { Unwatch } from 'unstorage'
+import { computed, ref, shallowRef } from 'vue'
 import { useIntervalFn, useNow, watchDebounced } from '@vueuse/core'
 import {
   addDays,
@@ -12,8 +13,26 @@ import {
 } from 'date-fns'
 
 import * as core from '@/core'
-import type { Cell, Household, Meal, Plan, SlotDef, SpecialDay } from '@/core'
-import { emptyData, loadAppData, saveAppData } from '@/data/repository'
+import type {
+  Cell,
+  EditConflict,
+  EntryChange,
+  EntryEdit,
+  Household,
+  Meal,
+  Plan,
+  SlotDef,
+  SpecialDay,
+} from '@/core'
+import {
+  appendChanges,
+  deviceId,
+  emptyData,
+  forgetOldAppData,
+  loadChanges,
+  loadOldAppData,
+  watchChanges,
+} from '@/data/repository'
 import type { AppData } from '@/data/schema'
 import {
   removeEater as withoutEater,
@@ -32,11 +51,36 @@ function plain<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
 }
 
+/** Data where nothing is set, not even the settings a new household starts with. */
+function blank(): AppData {
+  return { ...emptyData(), rotationStart: '', userName: '', tomorrowFrom: '' }
+}
+
 export const useAppStore = defineStore('app', () => {
+  /**
+   * What the app shows and edits. Screens change it freely; a moment later the difference
+   * from `saved` is recorded in the change log and saved.
+   */
   const data = ref<AppData>(emptyData())
   const loaded = ref(false)
   const firstRun = ref(false)
   const loadError = ref<string | null>(null)
+  const saveError = ref<string | null>(null)
+
+  /** The change log; `data` is worked out from it. */
+  const changes = shallowRef<EntryChange[]>([])
+  const changeIds = new Set<string>()
+  /** Things two phones changed at once, waiting for her to pick. */
+  const conflicts = shallowRef<EditConflict[]>([])
+  /** What the log says, as `data` was last set from it; null while the log is empty. */
+  let saved: AppData | null = null
+  let device = ''
+  let lastAt = 0
+  let unwatch: Unwatch | undefined
+  /** Changes from other phones that arrived since the log was last read. */
+  let arrived: EntryChange[] = []
+  /** Saves in flight, in order. */
+  let saving: Promise<void> = Promise.resolve()
 
   const household = computed(() => data.value.household)
 
@@ -83,29 +127,130 @@ export const useAppStore = defineStore('app', () => {
     return { cells }
   })
 
-  async function load() {
-    try {
-      const saved = await loadAppData()
-      firstRun.value = saved == null
-      if (saved) data.value = saved
-    } catch (e) {
-      loadError.value = e instanceof Error ? e.message : String(e)
-    }
-    loaded.value = true
+  function addChanges(added: EntryChange[]) {
+    const fresh = added.filter((c) => !changeIds.has(c.id))
+    for (const c of fresh) changeIds.add(c.id)
+    if (fresh.length) changes.value = [...changes.value, ...fresh]
   }
 
-  watchDebounced(
-    data,
-    (value) => {
-      if (loaded.value && !loadError.value) void saveAppData(plain(value))
-    },
-    { deep: true, debounce: 300 },
-  )
+  /** Works out the data from the log, and shows it. */
+  function fold() {
+    if (changes.value.length === 0) {
+      saved = null
+      conflicts.value = []
+      data.value = emptyData(now.value)
+      return
+    }
+    const ledger = core.foldAppData(changes.value, blank())
+    saved = ledger.data
+    conflicts.value = ledger.conflicts
+    data.value = plain(ledger.data)
+  }
 
+  /** Stamps for new changes: strictly increasing, so ids made here never repeat. */
+  function stamp() {
+    lastAt = Math.max(Date.now(), lastAt + 1)
+    return { at: lastAt, device }
+  }
+
+  /**
+   * Adds changes to the log and starts saving them where the log is kept right now. In the
+   * cloud a save only finishes once the phone is online, so nothing waits for it.
+   */
+  function append(added: EntryChange[]) {
+    addChanges(added)
+    const write = appendChanges(added).then(
+      () => (saveError.value = null),
+      (e: unknown) => (saveError.value = e instanceof Error ? e.message : String(e)),
+    )
+    saving = Promise.all([saving, write]).then(() => undefined)
+  }
+
+  /**
+   * Records whatever changed in `data` since it was last saved, and starts saving it. Safe
+   * to call any time; the app calls it a moment after each edit. The promise settles once
+   * every save started so far has finished.
+   */
+  function save(): Promise<void> {
+    if (!loaded.value || loadError.value) return saving
+    const after = plain(data.value)
+    // Opening the app is not a change: nothing is saved until she changes something. Then
+    // the first save also records the settings a new household starts with.
+    if (!saved && core.appDataChanges([], emptyData(now.value), after, stamp()).length === 0) {
+      return saving
+    }
+    const added = core.appDataChanges(changes.value, saved ?? blank(), after, stamp())
+    if (added.length) {
+      append(added)
+      saved = core.foldAppData(changes.value, blank()).data
+    }
+    return saving
+  }
+
+  function receive(change: EntryChange) {
+    if (changeIds.has(change.id)) return
+    arrived.push(change)
+    // Several usually arrive together; show them all at once.
+    if (loaded.value && arrived.length === 1) queueMicrotask(showArrived)
+  }
+
+  function showArrived() {
+    // Her own unsaved edits are recorded first, so they are kept alongside the new ones.
+    void save()
+    addChanges(arrived)
+    arrived = []
+    fold()
+  }
+
+  /** Reads the change log from where it is kept now, and follows changes from other phones. */
+  async function load() {
+    void save()
+    loaded.value = false
+    loadError.value = null
+    await unwatch?.()
+    unwatch = undefined
+    changes.value = []
+    changeIds.clear()
+    arrived = []
+    try {
+      device = await deviceId()
+      // Watch first, so a change saved elsewhere during the load is not missed.
+      unwatch = await watchChanges(receive)
+      addChanges(await loadChanges())
+      addChanges(arrived)
+      arrived = []
+      fold()
+      loaded.value = true
+      if (changes.value.length === 0) {
+        // Data an older version of the app saved on this phone goes into the log once.
+        const old = await loadOldAppData()
+        if (old) {
+          data.value = old
+          await save()
+          if (!saveError.value) await forgetOldAppData()
+        }
+      }
+      firstRun.value = changes.value.length === 0
+    } catch (e) {
+      loadError.value = e instanceof Error ? e.message : String(e)
+      loaded.value = true
+    }
+  }
+
+  watchDebounced(data, () => void save(), { deep: true, debounce: 300 })
+
+  /** Replaces everything, e.g. from a backup, and saves it right away. */
   function replaceAll(next: AppData) {
     data.value = plain(next)
     firstRun.value = false
-    loadError.value = null
+    void save()
+  }
+
+  /** Settles conflicts with her picks, recorded as the newest edits. */
+  function settle(edits: EntryEdit[]) {
+    void save()
+    append(core.recordEdits(changes.value, edits, stamp()))
+    fold()
   }
 
   // --- Plan -------------------------------------------------------------
@@ -260,12 +405,16 @@ export const useAppStore = defineStore('app', () => {
     loaded,
     firstRun,
     loadError,
+    saveError,
+    conflicts,
     household,
     planWithAnswers,
     today,
     dateOf,
     load,
+    save,
     replaceAll,
+    settle,
     cell,
     regenerate,
     setCell,

@@ -55,8 +55,8 @@ function loadStarter() {
   <v-card title="Backup" class="mb-4">
     <v-card-text>
       <v-alert type="info" variant="tonal" class="mb-4" density="comfortable">
-        Everything is saved only on this phone for now. Download a backup now and then, and keep it
-        somewhere safe (e.g. email it to yourself).
+        Signed out, everything is saved only on this phone. Download a backup now and then, and keep
+        it somewhere safe (e.g. email it to yourself).
       </v-alert>
       <v-alert
         v-if="error"
@@ -116,8 +116,7 @@ function loadStarter() {
         </template>
         <v-card-text>
           It has {{ pending?.household?.meals?.length ?? 0 }} meals and
-          {{ pending?.household?.eaters?.length ?? 0 }} people. It replaces everything on this
-          phone.
+          {{ pending?.household?.eaters?.length ?? 0 }} people. It replaces everything you have now.
         </v-card-text>
         <v-card-actions>
           <v-spacer />
