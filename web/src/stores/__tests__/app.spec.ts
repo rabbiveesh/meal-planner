@@ -42,6 +42,32 @@ describe('app store', () => {
     expect(app.data.userName).toBe('Someone')
   })
 
+  it('keeps her answers, notes and pantry checks when the app opens again', async () => {
+    const { app } = await setupStore({ regenerate: true })
+    app.setSpecialActive(1, 'lunch', true)
+    app.setNote('2026-10-13', 'main', 'plus vegetable soup for us')
+    app.data.shopping.marks['milk'] = 'have'
+    await app.save()
+    const kept = () => ({
+      answer: app.specialAnswer(1, 'lunch'),
+      note: app.note('2026-10-13', 'main'),
+      marks: { ...app.data.shopping.marks },
+    })
+    const expected = {
+      answer: true,
+      note: 'plus vegetable soup for us',
+      marks: { milk: 'have' },
+    }
+
+    await app.load()
+    expect(kept()).toEqual(expected)
+    // Another edit after opening again doesn't record them as removed.
+    app.setUserName('Someone')
+    await app.save()
+    await app.load()
+    expect(kept()).toEqual(expected)
+  })
+
   it('opening the app saves nothing until she changes something', async () => {
     const { app } = await setupStore({ starter: false })
     await new Promise((r) => setTimeout(r, 400))

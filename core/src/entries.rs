@@ -158,6 +158,9 @@ pub enum EditConflict {
 /// The app's data as the change log says it is now, and what waits for the user.
 #[derive(Tsify, Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "camelCase")]
+// The maps in its `AppData` cross into JavaScript as plain objects. Serializing takes this
+// setting from the outermost type only, so it is needed here as well as on `AppData`.
+#[tsify(hashmap_as_object)]
 pub struct Ledger {
     pub data: AppData,
     pub conflicts: Vec<EditConflict>,
