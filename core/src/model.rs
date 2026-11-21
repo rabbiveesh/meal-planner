@@ -276,10 +276,11 @@ pub enum PantryMark {
 
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Tsify)]
 #[serde(rename_all = "camelCase")]
+// Maps cross into JavaScript as plain objects, as the generated `Record` types say.
+#[tsify(hashmap_as_object)]
 pub struct ShoppingState {
     pub staples: Vec<StapleItem>,
     /// Pantry-check answers, keyed by shopping item key.
-    #[tsify(type = "Record<string, PantryMark>")]
     pub marks: BTreeMap<String, PantryMark>,
     /// Keys ticked off in the store.
     pub bought: Vec<String>,
@@ -288,6 +289,8 @@ pub struct ShoppingState {
 /// Everything the app keeps for one household.
 #[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize, Tsify)]
 #[serde(rename_all = "camelCase")]
+// Maps cross into JavaScript as plain objects, as the generated `Record` types say.
+#[tsify(hashmap_as_object)]
 pub struct AppData {
     /// The format version of a backup file holding this data.
     pub version: u32,
@@ -298,10 +301,8 @@ pub struct AppData {
     pub shopping: ShoppingState,
     /// Answers to the weekly special-day questions ("Any Shabbos leftovers?"), keyed by
     /// `yyyy-MM-dd|slotId`: an answer applies to that one date only. Missing means not asked.
-    #[tsify(type = "Record<string, boolean>")]
     pub special_answers: BTreeMap<String, bool>,
     /// Her own notes on a meal ("plus vegetable soup for us"), keyed by `yyyy-MM-dd|slotId`.
-    #[tsify(type = "Record<string, string>")]
     pub notes: BTreeMap<String, String>,
     /// The name the welcome greeted her by before each phone kept its own: a phone where
     /// nobody entered a name, signed out, still greets by it. '' for no name.
